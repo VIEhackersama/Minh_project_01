@@ -2,6 +2,7 @@ package com.school.records.modules.records.service;
 
 import com.school.records.modules.records.entity.DanhMucLoaiHoSo;
 import com.school.records.modules.records.repository.DanhMucLoaiHoSoRepository;
+import com.school.records.modules.records.repository.HoSoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -9,8 +10,12 @@ import java.util.List;
 
 @Service
 public class DanhMucService {
+
     @Autowired
     private DanhMucLoaiHoSoRepository repository;
+
+    @Autowired
+    private HoSoRepository hoSoRepository;
 
     public List<DanhMucLoaiHoSo> getAll() {
         return repository.findAll();
@@ -18,7 +23,7 @@ public class DanhMucService {
 
     public DanhMucLoaiHoSo getById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy loại hồ sơ: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy loại hồ sơ với id: " + id));
     }
 
     public DanhMucLoaiHoSo create(DanhMucLoaiHoSo entity) {
@@ -38,6 +43,9 @@ public class DanhMucService {
 
     public void delete(Long id) {
         DanhMucLoaiHoSo existing = getById(id);
+        if (hoSoRepository.existsByDanhMucId(id)) {
+            throw new IllegalStateException("Không thể xóa danh mục '" + existing.getTenLoai() + "' vì đang có hồ sơ thuộc danh mục này. Vui lòng di chuyển hoặc xóa các hồ sơ liên quan trước!");
+        }
         repository.delete(existing);
     }
 }

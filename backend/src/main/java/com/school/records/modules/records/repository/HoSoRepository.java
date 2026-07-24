@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface HoSoRepository extends JpaRepository<HoSo, Long>, JpaSpecificationExecutor<HoSo> {
     boolean existsByMaHoSo(String maHoSo);
     Optional<HoSo> findByMaHoSo(String maHoSo);
+    boolean existsByDanhMucId(Long danhMucId);
+    boolean existsByViTriId(Long viTriId);
 }
