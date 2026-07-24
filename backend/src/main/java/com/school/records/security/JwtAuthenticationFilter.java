@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +18,7 @@ import java.io.IOException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Autowired
     private JwtService jwtService;
@@ -51,10 +54,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    log.info("Successfully authenticated user: {} with authorities: {}", username, userDetails.getAuthorities());
+                } else {
+                    log.warn("JWT token is invalid for user: {}", username);
                 }
             }
         } catch (Exception e) {
-            // Log or ignore token verification issues (e.g., expired token) so filter chain continues
+            log.error("JWT authentication error for path {}: {}", request.getRequestURI(), e.getMessage(), e);
         }
         filterChain.doFilter(request, response);
     }

@@ -48,9 +48,16 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/school_records
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET_NAME: school-records
     depends_on:
       db:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+
 
   frontend:
     build:

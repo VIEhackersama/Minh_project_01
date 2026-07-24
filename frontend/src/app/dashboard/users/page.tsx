@@ -11,14 +11,13 @@ import {
   ShieldAlert, 
   Check, 
   X, 
-  Lock, 
-  Unlock, 
   Trash2,
   AlertCircle,
   Loader2,
   Mail,
   User,
-  Key
+  Key,
+  Lock
 } from "lucide-react";
 
 interface Role {
@@ -84,7 +83,7 @@ export default function UserManagementPage() {
   }
 
   // Fetch Users list
-  const { data: usersData, isLoading: isUsersLoading, refetch } = useQuery<UserPageResponse>({
+  const { data: usersData, isLoading: isUsersLoading } = useQuery<UserPageResponse>({
     queryKey: ["users", searchQuery, roleFilter, page],
     queryFn: () => api.get<UserPageResponse>("/admin/users", {
       params: { query: searchQuery, roleId: roleFilter, page, size: 10 }
@@ -165,7 +164,7 @@ export default function UserManagementPage() {
     setSelectedUser(user);
     setFormData({
       username: user.username,
-      password: "", // do not fill password
+      password: "",
       hoTen: user.hoTen,
       email: user.email,
       roleId: user.vaiTro.id,
@@ -186,16 +185,15 @@ export default function UserManagementPage() {
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.hoTen || !formData.email) {
-      setFormError("Vui lòng nhập đầy đủ họ tên và email");
+    if (!formData.hoTen) {
+      setFormError("Vui lòng nhập họ và tên");
       return;
     }
     updateUserMutation.mutate({
       hoTen: formData.hoTen,
       email: formData.email,
       roleId: formData.roleId,
-      trangThai: formData.trangThai,
-      password: formData.password || undefined // only update password if provided
+      trangThai: formData.trangThai
     });
   };
 
@@ -241,7 +239,7 @@ export default function UserManagementPage() {
         </button>
       </div>
 
-      {/* Main Container Card (matching stitch.md user list card styling) */}
+      {/* Main Container Card */}
       <div className="bg-pure-surface rounded-[2rem] p-6 md:p-8 flex flex-col gap-6 shadow-sm border border-whisper-border relative overflow-hidden">
         {/* Glow ambient circle */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary-fixed-dim/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
@@ -422,7 +420,7 @@ export default function UserManagementPage() {
 
       {/* MODAL: ADD USER */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-pure-surface rounded-[2rem] border border-whisper-border shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 md:p-8 flex flex-col gap-6 animate-fade-in">
             <div className="flex items-center justify-between pb-4 border-b border-whisper-border">
               <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
@@ -547,9 +545,9 @@ export default function UserManagementPage() {
         </div>
       )}
 
-      {/* MODAL: EDIT USER */}
+      {/* MODAL: EDIT USER (Gray out Email and Password for Admin) */}
       {isEditModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-pure-surface rounded-[2rem] border border-whisper-border shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 md:p-8 flex flex-col gap-6 animate-fade-in">
             <div className="flex items-center justify-between pb-4 border-b border-whisper-border">
               <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
@@ -570,7 +568,9 @@ export default function UserManagementPage() {
 
             <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-[10px] text-secondary font-bold uppercase tracking-wider">Họ và Tên *</label>
+                <label className="font-mono text-[10px] text-secondary font-bold uppercase tracking-wider">
+                  Họ và Tên <span className="text-danger-red">*</span>
+                </label>
                 <input
                   type="text"
                   required
@@ -581,41 +581,47 @@ export default function UserManagementPage() {
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-[10px] text-secondary font-bold uppercase tracking-wider">Email *</label>
+              {/* Grayed out Email Field */}
+              <div className="flex flex-col gap-1.5 opacity-75">
+                <label className="font-mono text-[10px] text-secondary font-bold uppercase tracking-wider flex items-center gap-1">
+                  Email <span className="text-slate-400 font-normal lowercase">(Cố định - Không thể thay đổi)</span>
+                </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-outline w-4 h-4" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <input
                     type="email"
-                    required
+                    disabled
+                    readOnly
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full bg-surface-container-low pl-10 pr-4 py-2.5 rounded-xl text-xs border border-transparent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-pure-surface focus:border-whisper-border transition-all"
-                    placeholder="vi-du@school.edu.vn"
+                    className="w-full bg-slate-100 text-slate-500 pl-10 pr-4 py-2.5 rounded-xl text-xs border border-slate-200 cursor-not-allowed select-none"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-[10px] text-secondary font-bold uppercase tracking-wider">Mật khẩu mới (Để trống nếu giữ nguyên)</label>
+              {/* Grayed out Password Field */}
+              <div className="flex flex-col gap-1.5 opacity-75">
+                <label className="font-mono text-[10px] text-secondary font-bold uppercase tracking-wider flex items-center gap-1">
+                  Mật khẩu <span className="text-slate-400 font-normal lowercase">(Cố định - Không thể thay đổi)</span>
+                </label>
                 <div className="relative">
-                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-outline w-4 h-4" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full bg-surface-container-low pl-10 pr-4 py-2.5 rounded-xl text-xs border border-transparent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-pure-surface focus:border-whisper-border transition-all"
-                    placeholder="Nhập để đổi mật khẩu"
+                    type="text"
+                    disabled
+                    readOnly
+                    value="••••••••••••"
+                    className="w-full bg-slate-100 text-slate-500 pl-10 pr-4 py-2.5 rounded-xl text-xs border border-slate-200 cursor-not-allowed select-none font-mono"
                   />
                 </div>
               </div>
 
+              {/* Editable Role Field */}
               <div className="flex flex-col gap-1.5">
                 <label className="font-mono text-[10px] text-secondary font-bold uppercase tracking-wider">Vai trò hệ thống</label>
                 <select
                   value={formData.roleId}
                   onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
-                  disabled={currentUser?.username === selectedUser.username} // Admin cannot edit their own role
+                  disabled={currentUser?.username === selectedUser.username}
                   className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl text-xs border border-transparent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-pure-surface focus:border-whisper-border transition-all disabled:opacity-50"
                 >
                   {rolesData?.map((r) => (

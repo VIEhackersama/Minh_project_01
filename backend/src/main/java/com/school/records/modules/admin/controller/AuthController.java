@@ -6,7 +6,9 @@ import com.school.records.security.JwtService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,8 +58,8 @@ public class AuthController {
             // Create httpOnly cookie for Refresh Token
             Cookie cookie = new Cookie("refreshToken", refreshToken);
             cookie.setHttpOnly(true);
-            cookie.setSecure(false); // Set true in production if HTTPS is configured
-            cookie.setPath("/api/auth"); // Only send to auth endpoints
+            cookie.setSecure(false);
+            cookie.setPath("/");
             cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
             servletResponse.addCookie(cookie);
 
@@ -110,12 +112,11 @@ public class AuthController {
             if (jwtService.isTokenValid(refreshToken, userDetails)) {
                 String accessToken = jwtService.generateAccessToken(userDetails);
                 
-                // Optional: Rotate refresh token
                 String newRefreshToken = jwtService.generateRefreshToken(userDetails);
                 Cookie cookie = new Cookie("refreshToken", newRefreshToken);
                 cookie.setHttpOnly(true);
                 cookie.setSecure(false);
-                cookie.setPath("/api/auth");
+                cookie.setPath("/");
                 cookie.setMaxAge(7 * 24 * 60 * 60);
                 servletResponse.addCookie(cookie);
 
@@ -145,7 +146,7 @@ public class AuthController {
         Cookie cookie = new Cookie("refreshToken", null);
         cookie.setHttpOnly(true);
         cookie.setSecure(false);
-        cookie.setPath("/api/auth");
+        cookie.setPath("/");
         cookie.setMaxAge(0); // Delete cookie
         servletResponse.addCookie(cookie);
 

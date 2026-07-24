@@ -6,7 +6,6 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
 }
 
-// Global flag to track if we are currently refreshing the token to prevent parallel refreshes
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 
@@ -22,7 +21,6 @@ function onRefreshed(token: string) {
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { params, headers, ...restOptions } = options;
 
-  // Construct URL with query parameters if present
   let url = `${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
   if (params) {
     const searchParams = new URLSearchParams();
@@ -37,18 +35,15 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     }
   }
 
-  // Set default headers
   const defaultHeaders: Record<string, string> = {
     "Content-Type": "application/json",
   };
 
-  // Inject Bearer Token if available
   const token = getGlobalToken();
   if (token) {
     defaultHeaders["Authorization"] = `Bearer ${token}`;
   }
 
-  // Merge headers
   const mergedHeaders = new Headers({
     ...defaultHeaders,
     ...headers,
@@ -56,6 +51,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   const response = await fetch(url, {
     ...restOptions,
+    credentials: "include",
     headers: mergedHeaders,
   });
 
@@ -64,9 +60,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     if (!isRefreshing) {
       isRefreshing = true;
       try {
-        // Attempt to refresh session (sends the httpOnly refreshToken cookie)
         const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -91,7 +87,6 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       }
     }
 
-    // Wait for the token to be refreshed and retry the request
     return new Promise<T>((resolve, reject) => {
       subscribeTokenRefresh((newToken) => {
         const retryHeaders = new Headers(mergedHeaders);
@@ -99,6 +94,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
         
         fetch(url, {
           ...restOptions,
+          credentials: "include",
           headers: retryHeaders,
         })
           .then((res) => {
@@ -129,7 +125,6 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     throw new Error(errorData?.message || errorData?.error || `Request failed with status ${response.status}`);
   }
 
-  // Handle empty responses
   if (response.status === 204) {
     return {} as T;
   }
@@ -157,4 +152,29 @@ export const api = {
     
   delete: <T>(path: string, options?: RequestOptions) => 
     request<T>(path, { ...options, method: "DELETE" }),
+
+  upload: async <T>(path: string, formData: FormData): Promise<T> => {
+    const token = getGlobalToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const url = `${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+    const response = await fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers,
+      body: formData,
+    });
+    if (!response.ok) {
+      let errData;
+      try {
+        errData = await response.json();
+      } catch {
+        errData = { message: `Upload failed with status ${response.status}` };
+      }
+      throw new Error(errData?.message || "Upload failed");
+    }
+    return response.json() as Promise<T>;
+  },
 };
