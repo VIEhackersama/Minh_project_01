@@ -5,6 +5,8 @@ import { useAuth } from "@/components/auth-context";
 import { 
   LayoutDashboard, 
   FolderOpen, 
+  Tags,
+  Archive,
   Undo2,
   BarChart3, 
   Settings, 
@@ -26,10 +28,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems: { name: string; href: string; icon: any; permission: string | null }[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: null },
-    { name: "Quản lý Hồ sơ", href: "/dashboard/records", icon: FolderOpen, permission: null }, // default permission check is null
+    { name: "Quản lý Hồ sơ", href: "/dashboard/records", icon: FolderOpen, permission: null },
+    { name: "Danh mục Hồ sơ", href: "/dashboard/categories", icon: Tags, permission: null },
+    { name: "Vị trí lưu kho", href: "/dashboard/storage", icon: Archive, permission: null },
     { name: "Mượn trả", href: "/dashboard/loans", icon: Undo2, permission: null },
     { name: "Báo cáo", href: "/dashboard/reports", icon: BarChart3, permission: null },
   ];
+
 
   // Only show Admin/System settings link if user has SYS_ADMIN permission
   if (hasPermission("SYS_ADMIN")) {

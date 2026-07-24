@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { api } from "@/lib/api";
 import { useRouter, usePathname } from "next/navigation";
 
-import { setGlobalToken } from "@/lib/token";
+import { setGlobalToken, getGlobalToken } from "@/lib/token";
 
 interface UserProfile {
   id: number;
@@ -28,11 +28,36 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [accessToken, setAccessTokenState] = useState<string | null>(null);
+  const [user, setUserState] = useState<UserProfile | null>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("userProfile");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+    }
+    return null;
+  });
+
+  const [accessToken, setAccessTokenState] = useState<string | null>(() => {
+    return getGlobalToken();
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+
+  const setUser = useCallback((profile: UserProfile | null) => {
+    setUserState(profile);
+    if (typeof window !== "undefined") {
+      if (profile) {
+        localStorage.setItem("userProfile", JSON.stringify(profile));
+      } else {
+        localStorage.removeItem("userProfile");
+      }
+    }
+  }, []);
 
   const setAccessToken = useCallback((token: string | null) => {
     setAccessTokenState(token);
@@ -41,24 +66,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSession = useCallback(async (): Promise<string | null> => {
     try {
-      // POST to refresh API (attaches httpOnly refreshToken cookie automatically)
+      // POST to refresh API (attaches httpOnly refreshToken cookie automatically with credentials: include)
       const data = await api.post<{ accessToken: string }>("/auth/refresh");
       const token = data.accessToken;
       setAccessToken(token);
       
-      // Fetch user profile info
+      // Fetch fresh user profile info
       const profile = await api.get<UserProfile>("/auth/me", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(profile);
       return token;
     } catch (e) {
-      // Refresh failed, user is not logged in or session expired
+      // Refresh failed, clear session
       setAccessToken(null);
       setUser(null);
       return null;
     }
-  }, [setAccessToken]);
+  }, [setAccessToken, setUser]);
 
   const login = async (username: string, password: string) => {
     const data = await api.post<{ accessToken: string; user: UserProfile }>("/auth/login", {
@@ -88,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return user.permissions?.includes(permission) || false;
   }, [user]);
 
-  // Initial load check
+  // Initial load check on mount
   useEffect(() => {
     const checkSession = async () => {
       await refreshSession();
