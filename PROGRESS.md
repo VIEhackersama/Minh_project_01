@@ -52,5 +52,7 @@ Tài liệu này ghi lại tiến độ thực tế triển khai các hạng m�
 
 ### **Tuần 6: Dockerization & Demo Polish** `[x] HOÀN THÀNH`
 - [x] Viết các multi-stage Dockerfile tối ưu kích thước ảnh (Backend sử dụng Alpine JRE, Frontend sử dụng Next.js standalone).
-- [x] Viết tệp `docker-compose.prod.yml` chạy bản hoàn thiện, tích hợp Nginx làm Reverse Proxy đứng trước cả 2 app.
-- [x] Thiết lập kiểm thử tích hợp tối giản (Smoke test, kiểm tra chặn xem tài liệu `CONFIDENTIAL` với tài khoản Teacher).
+- [x] Viết tệp `docker-compose.prod.yml` chạy bản hoàn thiện, tích hợp Nginx làm Reverse Proxy đứng trước cả 2 app (cổng 80).
+- [x] Thiết lập kiểm thử tích hợp tối giản (`SmokeTest` và `ConfidentialAccessTest` chặn xem tài liệu `CONFIDENTIAL` với tài khoản Teacher).
+- [x] **[Production Hardening]**: Chuyển các secret nhạy cảm sang tệp cấu hình môi trường `.env`, cấu hình CORS linh hoạt theo origin, triển khai phân quyền chặt chẽ Granular RBAC (`hasAnyRole('ADMIN', 'RECORDS_OFFICER')`) và tích hợp Modal từ chối quyền (`AccessDeniedModal`) trên Frontend khi nhận lỗi `403 Forbidden`.
+- [x] **[Điều hướng thông minh]**: Tự động chuyển hướng tài khoản Giáo viên (`TEACHER`) về trang Quản lý Hồ sơ (`/dashboard/records`) ngay khi đăng nhập để tránh gặp lỗi 403 ở trang báo cáo BGH.
