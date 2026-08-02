@@ -178,3 +178,6 @@ export const api = {
     return response.json() as Promise<T>;
   },
 };
+
+export const apiClient = api;
+

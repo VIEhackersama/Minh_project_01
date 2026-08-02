@@ -1,10 +1,23 @@
 "use client";
 
+import React, { useEffect } from "react";
 import { useAuth } from "@/components/auth-context";
+import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
 
 export default function Home() {
-  const { isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (user) {
+        router.replace("/dashboard");
+      } else {
+        router.replace("/login");
+      }
+    }
+  }, [user, isLoading, router]);
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100 font-sans">

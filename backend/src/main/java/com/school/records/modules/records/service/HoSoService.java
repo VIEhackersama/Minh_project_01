@@ -88,10 +88,13 @@ public class HoSoService {
         }
 
         LocalDate ngayLap = request.getNgayLap() != null ? request.getNgayLap() : LocalDate.now();
-        LocalDate thoiHanBaoQuanDen = null;
-        if (danhMuc != null && danhMuc.getThoiHanBaoQuanNam() != null) {
-            thoiHanBaoQuanDen = ngayLap.plusYears(danhMuc.getThoiHanBaoQuanNam());
-        }
+        LocalDate thoiHanBaoQuanDen = calculateThoiHanBaoQuanDen(
+                ngayLap,
+                request.getThoiHanBaoQuanThang(),
+                request.getThoiHanBaoQuanNgay(),
+                request.getThoiHanBaoQuanDen(),
+                danhMuc
+        );
 
         HoSo hoSo = HoSo.builder()
                 .maHoSo(maHoSo)
@@ -109,6 +112,38 @@ public class HoSoService {
         return hoSoRepository.save(hoSo);
     }
 
+    private LocalDate calculateThoiHanBaoQuanDen(
+            LocalDate ngayLap,
+            Integer thoiHanThang,
+            Integer thoiHanNgay,
+            LocalDate denDirect,
+            DanhMucLoaiHoSo danhMuc
+    ) {
+        if (denDirect != null) {
+            return denDirect;
+        }
+        if (ngayLap == null) {
+            ngayLap = LocalDate.now();
+        }
+        if (thoiHanThang != null && thoiHanThang > 0) {
+            return ngayLap.plusMonths(thoiHanThang);
+        }
+        if (thoiHanNgay != null && thoiHanNgay > 0) {
+            return ngayLap.plusDays(thoiHanNgay);
+        }
+        if (danhMuc != null && danhMuc.getThoiHanBaoQuanNam() != null) {
+            String unit = danhMuc.getDonViThoiHan();
+            if ("THANG".equalsIgnoreCase(unit)) {
+                return ngayLap.plusMonths(danhMuc.getThoiHanBaoQuanNam());
+            } else if ("NGAY".equalsIgnoreCase(unit)) {
+                return ngayLap.plusDays(danhMuc.getThoiHanBaoQuanNam());
+            } else {
+                return ngayLap.plusYears(danhMuc.getThoiHanBaoQuanNam());
+            }
+        }
+        return null;
+    }
+
     @Transactional
     public HoSo updateHoSo(Long id, UpdateHoSoRequest request) {
         HoSo existing = getById(id);
@@ -117,13 +152,32 @@ public class HoSoService {
             existing.setTenHoSo(request.getTenHoSo());
         }
 
+        if (request.getNgayLap() != null) {
+            existing.setNgayLap(request.getNgayLap());
+        }
+
         if (request.getDanhMucId() != null) {
             DanhMucLoaiHoSo danhMuc = danhMucRepository.findById(request.getDanhMucId())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục loại hồ sơ: " + request.getDanhMucId()));
             existing.setDanhMuc(danhMuc);
+        }
 
-            if (danhMuc.getThoiHanBaoQuanNam() != null && existing.getNgayLap() != null) {
-                existing.setThoiHanBaoQuanDen(existing.getNgayLap().plusYears(danhMuc.getThoiHanBaoQuanNam()));
+        // Recalculate thoiHanBaoQuanDen if any option provided
+        if (request.getThoiHanBaoQuanDen() != null ||
+            request.getThoiHanBaoQuanThang() != null ||
+            request.getThoiHanBaoQuanNgay() != null ||
+            request.getNgayLap() != null ||
+            request.getDanhMucId() != null) {
+
+            LocalDate calculated = calculateThoiHanBaoQuanDen(
+                    existing.getNgayLap(),
+                    request.getThoiHanBaoQuanThang(),
+                    request.getThoiHanBaoQuanNgay(),
+                    request.getThoiHanBaoQuanDen(),
+                    existing.getDanhMuc()
+            );
+            if (calculated != null) {
+                existing.setThoiHanBaoQuanDen(calculated);
             }
         }
 
@@ -156,7 +210,7 @@ public class HoSoService {
     }
 
     private String generateMaHoSo() {
-        String prefix = "HS-" + LocalDate.now().toString().replace("-", "");
+        String prefix = "HS-" + LocalDate.now().getYear();
         String suffix = Long.toHexString(System.currentTimeMillis() % 0xFFFF).toUpperCase();
         return prefix + "-" + String.format("%4s", suffix).replace(' ', '0');
     }
@@ -170,6 +224,9 @@ public class HoSoService {
         private String keHang;
         private String nganChua;
         private LocalDate ngayLap;
+        private Integer thoiHanBaoQuanThang;
+        private Integer thoiHanBaoQuanNgay;
+        private LocalDate thoiHanBaoQuanDen;
         private TrangThaiHoSo trangThai;
         private MucDoMat mucDoMat;
 
@@ -197,6 +254,15 @@ public class HoSoService {
         public LocalDate getNgayLap() { return ngayLap; }
         public void setNgayLap(LocalDate ngayLap) { this.ngayLap = ngayLap; }
 
+        public Integer getThoiHanBaoQuanThang() { return thoiHanBaoQuanThang; }
+        public void setThoiHanBaoQuanThang(Integer thoiHanBaoQuanThang) { this.thoiHanBaoQuanThang = thoiHanBaoQuanThang; }
+
+        public Integer getThoiHanBaoQuanNgay() { return thoiHanBaoQuanNgay; }
+        public void setThoiHanBaoQuanNgay(Integer thoiHanBaoQuanNgay) { this.thoiHanBaoQuanNgay = thoiHanBaoQuanNgay; }
+
+        public LocalDate getThoiHanBaoQuanDen() { return thoiHanBaoQuanDen; }
+        public void setThoiHanBaoQuanDen(LocalDate thoiHanBaoQuanDen) { this.thoiHanBaoQuanDen = thoiHanBaoQuanDen; }
+
         public TrangThaiHoSo getTrangThai() { return trangThai; }
         public void setTrangThai(TrangThaiHoSo trangThai) { this.trangThai = trangThai; }
 
@@ -211,6 +277,10 @@ public class HoSoService {
         private String phongKho;
         private String keHang;
         private String nganChua;
+        private LocalDate ngayLap;
+        private Integer thoiHanBaoQuanThang;
+        private Integer thoiHanBaoQuanNgay;
+        private LocalDate thoiHanBaoQuanDen;
         private TrangThaiHoSo trangThai;
         private MucDoMat mucDoMat;
 
@@ -231,6 +301,18 @@ public class HoSoService {
 
         public String getNganChua() { return nganChua; }
         public void setNganChua(String nganChua) { this.nganChua = nganChua; }
+
+        public LocalDate getNgayLap() { return ngayLap; }
+        public void setNgayLap(LocalDate ngayLap) { this.ngayLap = ngayLap; }
+
+        public Integer getThoiHanBaoQuanThang() { return thoiHanBaoQuanThang; }
+        public void setThoiHanBaoQuanThang(Integer thoiHanBaoQuanThang) { this.thoiHanBaoQuanThang = thoiHanBaoQuanThang; }
+
+        public Integer getThoiHanBaoQuanNgay() { return thoiHanBaoQuanNgay; }
+        public void setThoiHanBaoQuanNgay(Integer thoiHanBaoQuanNgay) { this.thoiHanBaoQuanNgay = thoiHanBaoQuanNgay; }
+
+        public LocalDate getThoiHanBaoQuanDen() { return thoiHanBaoQuanDen; }
+        public void setThoiHanBaoQuanDen(LocalDate thoiHanBaoQuanDen) { this.thoiHanBaoQuanDen = thoiHanBaoQuanDen; }
 
         public TrangThaiHoSo getTrangThai() { return trangThai; }
         public void setTrangThai(TrangThaiHoSo trangThai) { this.trangThai = trangThai; }

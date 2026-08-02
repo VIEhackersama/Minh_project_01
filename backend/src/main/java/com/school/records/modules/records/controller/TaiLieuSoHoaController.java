@@ -39,6 +39,13 @@ public class TaiLieuSoHoaController {
         return principal != null ? principal.toString() : "admin";
     }
 
+    private boolean isTeacherUser() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TEACHER") || a.getAuthority().equals("TEACHER"));
+    }
+
     @GetMapping("/ho-so/{hoSoId}")
     public ResponseEntity<List<TaiLieuSoHoa>> getByHoSoId(@PathVariable("hoSoId") Long hoSoId) {
         return ResponseEntity.ok(service.getByHoSoId(hoSoId));
@@ -73,6 +80,12 @@ public class TaiLieuSoHoaController {
     public ResponseEntity<?> downloadDocument(@PathVariable("id") Long id) {
         try {
             TaiLieuSoHoa taiLieu = service.getById(id);
+            if (taiLieu.getHoSo() != null && com.school.records.modules.records.entity.MucDoMat.CONFIDENTIAL.equals(taiLieu.getHoSo().getMucDoMat())) {
+                if (isTeacherUser()) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(Map.of("message", "Tài khoản Giáo viên không có quyền xem/tải tài liệu CONFIDENTIAL."));
+                }
+            }
             InputStream inputStream = service.downloadDocumentStream(id);
 
             String encodedFilename = URLEncoder.encode(taiLieu.getTenTaiLieu(), StandardCharsets.UTF_8).replace("+", "%20");

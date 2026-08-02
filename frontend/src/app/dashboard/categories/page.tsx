@@ -8,10 +8,24 @@ import {
   deleteDanhMuc, 
   DanhMucLoaiHoSo 
 } from "@/lib/recordsApi";
-import { Tags, Plus, Edit2, Trash2, Search, Loader2 } from "lucide-react";
+import { Tags, Plus, Edit2, Trash2, Search, Loader2, ShieldAlert } from "lucide-react";
+import { useAuth } from "@/components/auth-context";
 
 export default function CategoriesPage() {
+  const { user, hasPermission } = useAuth();
   const [categories, setCategories] = useState<DanhMucLoaiHoSo[]>([]);
+
+  if (user && user.role !== "ADMIN" && user.role !== "RECORDS_OFFICER" && !hasPermission("RECORD_MANAGE")) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+        <ShieldAlert className="w-16 h-16 text-rose-500" />
+        <h2 className="text-xl font-bold text-on-surface">Không Có Quyền Truy Cập</h2>
+        <p className="text-sm text-secondary max-w-md">
+          Chức năng Quản lý Danh mục Hồ sơ chỉ dành cho Cán bộ Văn thư & Quản trị viên.
+        </p>
+      </div>
+    );
+  }
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +33,7 @@ export default function CategoriesPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<DanhMucLoaiHoSo | null>(null);
-  const [formData, setFormData] = useState({ tenLoai: "", thoiHanBaoQuanNam: 5, moTa: "" });
+  const [formData, setFormData] = useState({ tenLoai: "", thoiHanBaoQuanNam: 5, donViThoiHan: "NAM", moTa: "" });
   const [submitting, setSubmitting] = useState(false);
 
   const fetchCategories = async () => {
@@ -45,11 +59,12 @@ export default function CategoriesPage() {
       setFormData({
         tenLoai: category.tenLoai,
         thoiHanBaoQuanNam: category.thoiHanBaoQuanNam,
+        donViThoiHan: category.donViThoiHan || "NAM",
         moTa: category.moTa || ""
       });
     } else {
       setEditingCategory(null);
-      setFormData({ tenLoai: "", thoiHanBaoQuanNam: 5, moTa: "" });
+      setFormData({ tenLoai: "", thoiHanBaoQuanNam: 5, donViThoiHan: "NAM", moTa: "" });
     }
     setIsModalOpen(true);
   };
@@ -88,6 +103,14 @@ export default function CategoriesPage() {
     c.tenLoai.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.moTa && c.moTa.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const formatRetentionUnit = (value: number, unit?: string) => {
+    switch (unit) {
+      case "THANG": return `${value} tháng`;
+      case "NGAY": return `${value} ngày`;
+      default: return `${value} năm`;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -155,7 +178,7 @@ export default function CategoriesPage() {
                     <td className="px-6 py-4 font-semibold text-on-surface">{item.tenLoai}</td>
                     <td className="px-6 py-4">
                       <span className="px-3 py-1 bg-primary/10 text-primary font-medium rounded-full text-xs">
-                        {item.thoiHanBaoQuanNam} năm
+                        {formatRetentionUnit(item.thoiHanBaoQuanNam, item.donViThoiHan)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-secondary">{item.moTa || "—"}</td>
@@ -205,19 +228,35 @@ export default function CategoriesPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-on-surface mb-1">
-                  Thời Hạn Bảo Quản (Năm) <span className="text-danger-red">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  min={1}
-                  max={100}
-                  value={formData.thoiHanBaoQuanNam}
-                  onChange={(e) => setFormData({ ...formData, thoiHanBaoQuanNam: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-whisper-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                    Thời Hạn Bảo Quản <span className="text-danger-red">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    max={1000}
+                    value={formData.thoiHanBaoQuanNam}
+                    onChange={(e) => setFormData({ ...formData, thoiHanBaoQuanNam: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-whisper-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                    Đơn Vị Thời Gian <span className="text-danger-red">*</span>
+                  </label>
+                  <select
+                    value={formData.donViThoiHan}
+                    onChange={(e) => setFormData({ ...formData, donViThoiHan: e.target.value })}
+                    className="w-full px-3 py-2 border border-whisper-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-pure-surface"
+                  >
+                    <option value="NAM">Năm</option>
+                    <option value="THANG">Tháng</option>
+                    <option value="NGAY">Ngày</option>
+                  </select>
+                </div>
               </div>
 
               <div>

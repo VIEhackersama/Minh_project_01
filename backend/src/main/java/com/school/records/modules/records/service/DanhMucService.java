@@ -37,6 +37,7 @@ public class DanhMucService {
         DanhMucLoaiHoSo existing = getById(id);
         existing.setTenLoai(updateData.getTenLoai());
         existing.setThoiHanBaoQuanNam(updateData.getThoiHanBaoQuanNam());
+        existing.setDonViThoiHan(updateData.getDonViThoiHan());
         existing.setMoTa(updateData.getMoTa());
         return repository.save(existing);
     }

@@ -1,263 +1,279 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-context";
-import { 
-  FolderOpen, 
-  RefreshCw, 
-  Users, 
-  AlertTriangle, 
-  History, 
-  Zap, 
-  UserPlus, 
-  QrCode, 
-  PlusCircle, 
+import {
+  FolderOpen,
+  ArrowCounterClockwise,
+  Users,
+  Warning,
+  ClockCountdown,
+  Lightning,
+  UserPlus,
+  QrCode,
+  Plus,
   ArrowRight,
-  HardDrive
-} from "lucide-react";
+  HardDrive,
+  Flame,
+  ChartBar,
+  CheckCircle,
+  ArrowsClockwise,
+} from "@phosphor-icons/react";
 import Link from "next/link";
+import { apiClient } from "@/lib/api";
 
 export default function DashboardHome() {
   const { user } = useAuth();
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [scanningOverdue, setScanningOverdue] = useState(false);
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
 
-  const stats = [
+  const fetchSummary = async () => {
+    try {
+      setLoading(true);
+      const res = await apiClient.get<any>("/reports/summary");
+      setSummary(res);
+    } catch (err) {
+      console.error("Failed to fetch summary reports:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSummary();
+  }, []);
+
+  const handleScanOverdue = async () => {
+    try {
+      setScanningOverdue(true);
+      setScanMessage(null);
+      const res = await apiClient.post<any>("/phieu-muon/check-overdue", {});
+      setScanMessage(`Đã quét xong — cập nhật ${res.updatedCount || 0} phiếu quá hạn.`);
+      fetchSummary();
+    } catch {
+      setScanMessage("Kết nối thất bại. Vui lòng thử lại.");
+    } finally {
+      setScanningOverdue(false);
+    }
+  };
+
+  const totalRecords = summary?.totalRecords ?? 0;
+  const storedRecords = summary?.storedRecords ?? 0;
+  const activeLoans = summary?.activeLoans ?? 0;
+  const reservedRecords = summary?.reservedRecords ?? 0;
+  const overdueLoans = summary?.overdueLoans ?? 0;
+  const pendingLoans = summary?.pendingLoans ?? 0;
+  const eligibleDestruction = summary?.eligibleDestruction ?? 0;
+  const destroyedRecords = summary?.destroyedRecords ?? 0;
+
+  const storedPct = totalRecords ? Math.round((storedRecords / totalRecords) * 100) : 0;
+
+  // ── Metric strip data
+  const metrics = [
     {
-      title: "Total Records",
-      value: "1,248",
+      label: "Tổng hồ sơ",
+      value: loading ? "—" : totalRecords,
+      sub: `${storedPct}% lưu kho`,
       icon: FolderOpen,
-      color: "bg-primary text-on-primary shadow-primary/20",
-      accent: "bg-primary/10",
-      trend: "+12% from last month",
-      trendColor: "text-success-green"
+      iconColor: "text-primary",
     },
     {
-      title: "Active Loans",
-      value: "85",
-      icon: RefreshCw, // swap_horiz -> RefreshCw
-      color: "bg-warning-orange text-white shadow-warning-orange/20",
-      accent: "bg-warning-orange/10",
-      trend: "+5 this week",
-      trendColor: "text-success-green"
+      label: "Đang mượn",
+      value: loading ? "—" : activeLoans + reservedRecords,
+      sub: `${activeLoans} thực tế · ${reservedRecords} đặt giữ`,
+      icon: ArrowCounterClockwise,
+      iconColor: "text-warning-orange",
     },
     {
-      title: "Users Online",
-      value: "12",
-      icon: Users,
-      color: "bg-success-green text-white shadow-success-green/20",
-      accent: "bg-success-green/10",
-      trend: "Currently active",
-      trendColor: "text-on-surface-variant"
+      label: "Quá hạn",
+      value: loading ? "—" : overdueLoans,
+      sub: overdueLoans > 0 ? "Cần xử lý ngay" : "Không vi phạm",
+      icon: Warning,
+      iconColor: overdueLoans > 0 ? "text-danger-red" : "text-success-green",
+      highlight: overdueLoans > 0,
     },
     {
-      title: "Overdue Alerts",
-      value: "7",
-      icon: AlertTriangle,
-      color: "bg-danger-red text-white shadow-danger-red/20",
-      accent: "bg-danger-red/10",
-      trend: "Requires immediate action",
-      trendColor: "text-danger-red",
-      isError: true
-    }
-  ];
-
-  const activities = [
-    {
-      avatar: "VN",
-      name: "Văn thư Nguyễn",
-      action: "vừa tải lên tài liệu mới",
-      detail: "Báo cáo tổng kết học kỳ 1 (PDF)",
-      time: "10 phút trước",
-      bg: "bg-primary-fixed text-on-primary-fixed-variant"
+      label: "Chờ hủy",
+      value: loading ? "—" : eligibleDestruction,
+      sub: `${destroyedRecords} đã hủy`,
+      icon: Flame,
+      iconColor: "text-zinc-400",
     },
-    {
-      avatar: "GT",
-      name: "Giáo viên Trần",
-      action: "yêu cầu mượn hồ sơ",
-      detail: "Hồ sơ học sinh khối 10 - Năm học 2023-2024",
-      time: "45 phút trước",
-      bg: "bg-tertiary-fixed text-on-tertiary-fixed",
-      status: "Chờ duyệt",
-      statusStyle: "bg-warning-orange/20 text-warning-orange"
-    },
-    {
-      avatar: "SYS",
-      name: "Hệ thống",
-      action: "hoàn thành sao lưu định kỳ",
-      detail: "Đã nén và lưu trữ thành công toàn bộ dữ liệu.",
-      time: "2 giờ trước",
-      bg: "bg-secondary-fixed text-on-secondary-container",
-      isSystem: true
-    }
   ];
 
   return (
     <div className="flex flex-col w-full gap-8 animate-fade-in">
-      {/* Welcome banner */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold tracking-tight text-on-surface">Xin chào, {user?.hoTen || "Quản trị viên"}!</h1>
-        <p className="text-sm text-secondary">Chào mừng bạn quay trở lại với trang quản trị lưu trữ hồ sơ trường học EduArchive.</p>
+
+      {/* ── Welcome row */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-on-surface">
+            Xin chào, {user?.hoTen || "Quản trị viên"}
+          </h1>
+          <p className="text-sm text-secondary mt-0.5">Dashboard điều hành EduArchive</p>
+        </div>
+        <button
+          onClick={handleScanOverdue}
+          disabled={scanningOverdue}
+          className="flex items-center gap-2 px-4 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-[13px] font-medium rounded-lg transition-all shrink-0 disabled:opacity-50 border border-whisper-border"
+        >
+          <ArrowsClockwise size={15} className={scanningOverdue ? "animate-spin" : ""} />
+          {scanningOverdue ? "Đang quét..." : "Quét phiếu quá hạn"}
+        </button>
       </div>
 
-      {/* Stats Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => {
-          const Icon = stat.icon;
+      {/* ── Scan message */}
+      {scanMessage && (
+        <div className="px-4 py-3 bg-primary/8 border border-primary/20 rounded-xl flex items-center gap-3 text-[13px] font-medium text-primary">
+          <CheckCircle size={16} weight="fill" />
+          <span>{scanMessage}</span>
+        </div>
+      )}
+
+      {/* ── Metric Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-whisper-border border border-whisper-border rounded-2xl bg-pure-surface overflow-hidden shadow-sm">
+        {metrics.map((m, i) => {
+          const Icon = m.icon;
           return (
-            <div 
-              key={i} 
-              className={`relative overflow-hidden rounded-2xl p-6 shadow-sm border border-whisper-border group transition-all duration-300 hover:shadow-md ${
-                stat.isError ? "bg-error-container/40" : "bg-pure-surface"
+            <div
+              key={i}
+              className={`px-6 py-5 flex flex-col gap-3 relative ${
+                m.highlight ? "bg-red-50/50" : ""
               }`}
             >
-              <div 
-                className={`absolute -right-6 -top-6 w-24 h-24 rounded-full blur-xl transition-colors duration-500 ${
-                  stat.isError ? "bg-danger-red/10" : stat.accent
-                } group-hover:opacity-100 opacity-60`} 
-              />
-              <div className="flex justify-between items-start mb-4 relative z-10">
-                <div>
-                  <p className="font-mono text-[10px] text-on-surface-variant font-bold uppercase tracking-wider mb-1">
-                    {stat.title}
-                  </p>
-                  <h2 className="text-2xl font-black tracking-tight text-on-surface">
-                    {stat.value}
-                  </h2>
-                </div>
-                <div className={`p-2.5 rounded-xl shadow-sm ${stat.color}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">
+                  {m.label}
+                </span>
+                <Icon size={16} className={m.iconColor} weight="fill" />
               </div>
-              <div className={`flex items-center gap-1.5 font-medium text-xs relative z-10 ${stat.trendColor}`}>
-                <span className="text-[10px]">•</span>
-                <span>{stat.trend}</span>
+              <div>
+                <span className={`text-3xl font-black tracking-tight leading-none ${m.highlight ? "text-danger-red" : "text-on-surface"}`}>
+                  {m.value}
+                </span>
+                <p className={`text-[11px] mt-1.5 ${m.highlight ? "text-danger-red/70" : "text-secondary"}`}>
+                  {m.sub}
+                </p>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Grid Content Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Recent Activities Section (2 Cols) */}
-        <div className="lg:col-span-2 bg-pure-surface rounded-3xl p-6 md:p-8 shadow-sm border border-whisper-border relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-          
-          <h3 className="text-lg font-bold text-on-surface mb-6 flex items-center gap-3">
-            <History className="w-5 h-5 text-primary" />
-            Hoạt Động Gần Đây
-          </h3>
+      {/* ── Main grid: Analytics (2col) + Quick Actions (1col) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          <div className="space-y-6 relative z-10">
-            {activities.map((act, i) => (
-              <div key={i} className="flex gap-4">
-                <div className="relative">
-                  <div className={`w-12 h-12 rounded-full font-bold flex items-center justify-center text-sm shadow-sm shrink-0 ${act.bg}`}>
-                    {act.avatar}
-                  </div>
-                  {!act.isSystem && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-success-green rounded-full ring-2 ring-pure-surface"></div>
-                  )}
-                </div>
-                
-                <div className="flex-grow bg-surface-container-low/40 border border-whisper-border rounded-2xl p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5">
-                  <p className="text-sm text-on-surface">
-                    <span className="font-semibold text-primary">{act.name}</span> {act.action}
-                  </p>
-                  <p className="font-mono text-xs text-on-surface-variant mt-1.5">{act.detail}</p>
-                  
-                  {act.status && (
-                    <div className="mt-3">
-                      <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full ${act.statusStyle}`}>
-                        {act.status}
-                      </span>
-                    </div>
-                  )}
-                  
-                  <p className="text-[10px] text-outline mt-2 text-right">{act.time}</p>
-                </div>
-              </div>
-            ))}
+        {/* Analytics panel */}
+        <div className="lg:col-span-2 bg-pure-surface rounded-2xl border border-whisper-border shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-whisper-border flex items-center justify-between">
+            <h3 className="text-[14px] font-bold text-on-surface flex items-center gap-2">
+              <ChartBar size={16} weight="duotone" className="text-primary" />
+              Chỉ số kiểm kê & khai thác
+            </h3>
+            <Link href="/dashboard/reports" className="text-[12px] font-semibold text-primary hover:underline">
+              Xem báo cáo →
+            </Link>
           </div>
 
-          <button className="mt-6 text-primary font-bold text-xs hover:underline w-full text-center">
-            Xem Tất Cả Hoạt Động
-          </button>
+          <div className="p-6 flex flex-col gap-6">
+            {/* Sub-metrics row */}
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: "Lưu kho", value: storedRecords, color: "text-on-surface", note: "Sẵn sàng mượn" },
+                { label: "Đang mượn", value: activeLoans, color: "text-warning-orange", note: "Độc giả đang giữ" },
+                { label: "Chờ duyệt", value: pendingLoans, color: "text-primary", note: "Cần văn thư duyệt" },
+              ].map((item, i) => (
+                <div key={i} className="bg-surface-container-low rounded-xl px-4 py-3.5">
+                  <p className="text-[10px] text-secondary font-semibold uppercase tracking-wide mb-2">{item.label}</p>
+                  <p className={`text-2xl font-black ${item.color}`}>{loading ? "—" : item.value}</p>
+                  <p className="text-[10px] text-secondary mt-1">{item.note}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Storage ratio bar */}
+            <div>
+              <div className="flex items-center justify-between text-[12px] font-medium text-on-surface mb-2">
+                <span>Tỷ lệ hồ sơ lưu kho an toàn</span>
+                <span className="font-mono font-bold">{storedPct}%</span>
+              </div>
+              <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${storedPct}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-4 border-t border-whisper-border flex items-center justify-between">
+            <span className="text-[11px] text-secondary">Dữ liệu được cập nhật thời gian thực.</span>
+            <Link href="/dashboard/reports" className="text-[12px] font-semibold text-primary hover:underline">
+              Xem báo cáo kho →
+            </Link>
+          </div>
         </div>
 
-        {/* Quick Actions & Storage Section (1 Col) */}
-        <div className="flex flex-col gap-8">
-          
-          {/* Quick Actions (Dark Card) */}
-          <div className="bg-charcoal-ink text-canvas-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden group border border-slate-800">
-            <div className="absolute -right-12 -top-12 w-40 h-40 bg-primary-fixed/20 rounded-full blur-2xl group-hover:bg-primary-fixed/30 transition-all duration-750"></div>
-            
-            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3 relative z-10">
-              <Zap className="w-5 h-5 text-primary-fixed-dim" />
-              Thao Tác Nhanh
-            </h3>
-
-            <div className="space-y-4 relative z-10">
-              {user?.role === "ADMIN" && (
-                <Link
-                  href="/dashboard/users"
-                  className="w-full bg-white/5 hover:bg-white/10 text-white text-xs font-semibold py-4 px-5 rounded-2xl flex items-center justify-between transition-colors border border-white/5 group/btn"
-                >
-                  <span className="flex items-center gap-3">
-                    <UserPlus className="w-4 h-4 text-primary-fixed-dim" />
-                    Quản lý người dùng
-                  </span>
-                  <ArrowRight className="w-4 h-4 opacity-0 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all" />
-                </Link>
-              )}
-
-              <Link
-                href="/dashboard/records?print=qr"
-                className="w-full bg-white/5 hover:bg-white/10 text-white text-xs font-semibold py-4 px-5 rounded-2xl flex items-center justify-between transition-colors border border-white/5 group/btn"
-              >
-                <span className="flex items-center gap-3">
-                  <QrCode className="w-4 h-4 text-primary-fixed-dim" />
-                  In mã QR hồ sơ
-                </span>
-                <ArrowRight className="w-4 h-4 opacity-0 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all" />
-              </Link>
-
-              <Link
-                href="/dashboard/records?create=true"
-                className="w-full bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold py-4 px-5 rounded-2xl flex items-center justify-between transition-colors shadow-lg shadow-primary/20 group/btn mt-2"
-              >
-                <span className="flex items-center gap-3">
-                  <PlusCircle className="w-4 h-4" />
-                  Tạo hồ sơ mới
-                </span>
-                <ArrowRight className="w-4 h-4 opacity-0 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all" />
-              </Link>
+        {/* Quick Actions */}
+        <div className="flex flex-col gap-4">
+          {/* Dark quick-actions card */}
+          <div className="bg-charcoal-ink rounded-2xl border border-white/[0.07] overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/[0.06]">
+              <h3 className="text-[13px] font-bold text-white flex items-center gap-2">
+                <Lightning size={15} weight="fill" className="text-primary-fixed-dim" />
+                Thao tác nhanh
+              </h3>
+            </div>
+            <div className="p-3 flex flex-col gap-1.5">
+              {[
+                { href: "/dashboard/records?create=true", label: "Tạo hồ sơ mới", icon: Plus, accent: true },
+                { href: "/dashboard/destruction", label: "Đề xuất tiêu hủy", icon: Flame, accent: false },
+                { href: "/dashboard/reports", label: "Báo cáo thống kê", icon: ChartBar, accent: false },
+              ].map((action, i) => {
+                const Icon = action.icon;
+                return (
+                  <Link
+                    key={i}
+                    href={action.href}
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl text-[13px] font-medium transition-all group ${
+                      action.accent
+                        ? "bg-primary text-white hover:bg-primary-container"
+                        : "bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Icon size={15} weight={action.accent ? "bold" : "regular"} />
+                      {action.label}
+                    </span>
+                    <ArrowRight
+                      size={14}
+                      className="opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
+                    />
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
-          {/* Storage Usage Progress */}
-          <div className="bg-pure-surface border border-whisper-border rounded-3xl p-6 shadow-sm flex-1 flex flex-col justify-between overflow-hidden relative">
-            <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-secondary/5 rounded-full blur-xl pointer-events-none"></div>
-            
-            <div>
-              <h4 className="text-base font-bold text-on-surface mb-2 flex items-center gap-2">
-                <HardDrive className="w-4.5 h-4.5 text-primary" />
-                Dung Lượng Số Hóa
-              </h4>
-              <p className="text-xs text-secondary leading-relaxed">Bộ nhớ chứa các file tài liệu số hóa trên đám mây lưu trữ MinIO đang ở mức tối ưu.</p>
+          {/* MinIO storage card */}
+          <div className="bg-pure-surface border border-whisper-border rounded-2xl p-5 shadow-sm">
+            <h4 className="text-[13px] font-bold text-on-surface mb-1 flex items-center gap-2">
+              <HardDrive size={15} className="text-primary" weight="duotone" />
+              Dung lượng MinIO S3
+            </h4>
+            <p className="text-[12px] text-secondary leading-relaxed mb-4">
+              Object storage tích hợp đang hoạt động bình thường.
+            </p>
+            <div className="flex justify-between font-mono text-[10px] text-on-surface-variant font-bold mb-1.5">
+              <span>Đã dùng</span>
+              <span>35%</span>
             </div>
-
-            <div className="mt-6 relative z-10">
-              <div className="flex justify-between font-mono text-[10px] text-on-surface-variant font-bold mb-2">
-                <span>42.8 GB Đã Dùng</span>
-                <span>100 GB Tổng Cộng</span>
-              </div>
-              <div className="w-full h-3 bg-surface-container rounded-full overflow-hidden border border-slate-200">
-                <div className="h-full bg-primary w-[42%] rounded-full shadow-[0_0_10px_rgba(0,74,198,0.3)]"></div>
-              </div>
+            <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+              <div className="h-full bg-primary w-[35%] rounded-full" />
             </div>
           </div>
-
         </div>
       </div>
     </div>

@@ -42,15 +42,15 @@ Tài liệu này ghi lại tiến độ thực tế triển khai các hạng m�
 
 ---
 
-### **Tuần 5: Công việc nền & Báo cáo** `[ ] CHƯA LÀM`
-- [ ] Viết Spring Boot `@Scheduled` định kỳ chạy hàng ngày quét phiếu mượn quá hạn để tự động đổi trạng thái và gửi cảnh báo.
-- [ ] Viết nghiệp vụ lập Đề xuất tiêu hủy đối với các hồ sơ đã quá thời hạn bảo quản lưu kho.
-- [ ] Xây dựng API tổng hợp báo cáo kiểm kê kho, thống kê tỷ lệ mượn trả.
-- [ ] Làm giao diện Dashboard trực quan (biểu đồ thống kê đơn giản) cho Ban Giám Hiệu.
+### **Tuần 5: Công việc nền & Báo cáo** `[x] HOÀN THÀNH`
+- [x] Viết Spring Boot `@Scheduled` định kỳ chạy hàng ngày quét phiếu mượn quá hạn để tự động đổi trạng thái và gửi cảnh báo (`OverdueLoanJob` & `POST /api/phieu-muon/check-overdue`).
+- [x] Viết nghiệp vụ lập Đề xuất tiêu hủy đối với các hồ sơ đã quá thời hạn bảo quản lưu kho (`/api/destruction` & trang `/dashboard/destruction`).
+- [x] Xây dựng API tổng hợp báo cáo kiểm kê kho, thống kê tỷ lệ mượn trả (`/api/reports` & trang `/dashboard/reports`).
+- [x] Làm giao diện Dashboard trực quan (biểu đồ thống kê & thẻ KPI) cho Ban Giám Hiệu trên Next.js Frontend.
 
 ---
 
-### **Tuần 6: Dockerization & Demo Polish** `[ ] CHƯA LÀM`
-- [ ] Viết các multi-stage Dockerfile tối ưu kích thước ảnh (Backend sử dụng Alpine JRE, Frontend sử dụng Next.js standalone).
-- [ ] Viết tệp `docker-compose.prod.yml` chạy bản hoàn thiện, tích hợp Nginx làm Reverse Proxy đứng trước cả 2 app.
-- [ ] Thiết lập kiểm thử tích hợp tối giản (Smoke test, kiểm tra chặn xem tài liệu `CONFIDENTIAL` với tài khoản Teacher).
+### **Tuần 6: Dockerization & Demo Polish** `[x] HOÀN THÀNH`
+- [x] Viết các multi-stage Dockerfile tối ưu kích thước ảnh (Backend sử dụng Alpine JRE, Frontend sử dụng Next.js standalone).
+- [x] Viết tệp `docker-compose.prod.yml` chạy bản hoàn thiện, tích hợp Nginx làm Reverse Proxy đứng trước cả 2 app.
+- [x] Thiết lập kiểm thử tích hợp tối giản (Smoke test, kiểm tra chặn xem tài liệu `CONFIDENTIAL` với tài khoản Teacher).
