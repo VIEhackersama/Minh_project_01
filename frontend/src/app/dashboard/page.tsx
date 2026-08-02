@@ -202,8 +202,8 @@ export default function DashboardHome() {
             {/* Storage ratio bar */}
             <div>
               <div className="flex items-center justify-between text-[12px] font-medium text-on-surface mb-2">
-                <span>Tỷ lệ hồ sơ lưu kho an toàn</span>
-                <span className="font-mono font-bold">{storedPct}%</span>
+                <span>Tỷ lệ hồ sơ hiện diện sẵn sàng tại kho</span>
+                <span className="font-mono font-bold">{storedPct}% ({storedRecords}/{totalRecords} hồ sơ)</span>
               </div>
               <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
                 <div
@@ -260,24 +260,6 @@ export default function DashboardHome() {
                   </Link>
                 );
               })}
-            </div>
-          </div>
-
-          {/* MinIO storage card */}
-          <div className="bg-pure-surface border border-whisper-border rounded-2xl p-5 shadow-sm">
-            <h4 className="text-[13px] font-bold text-on-surface mb-1 flex items-center gap-2">
-              <HardDrive size={15} className="text-primary" weight="duotone" />
-              Dung lượng MinIO S3
-            </h4>
-            <p className="text-[12px] text-secondary leading-relaxed mb-4">
-              Object storage tích hợp đang hoạt động bình thường.
-            </p>
-            <div className="flex justify-between font-mono text-[10px] text-on-surface-variant font-bold mb-1.5">
-              <span>Đã dùng</span>
-              <span>35%</span>
-            </div>
-            <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-              <div className="h-full bg-primary w-[35%] rounded-full" />
             </div>
           </div>
         </div>

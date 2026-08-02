@@ -326,7 +326,7 @@ export default function DestructionPage() {
                             Trình duyệt
                           </button>
                         )}
-                        {prop.trangThai === "CHO_DUYET" && (user?.role === "ADMIN" || user?.role === "RECORDS_OFFICER") && (
+                        {prop.trangThai === "CHO_DUYET" && user?.role === "ADMIN" && (
                           <button
                             onClick={() => handleApproveProposal(prop.id)}
                             className="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-semibold text-[11px] rounded-lg transition-colors"
@@ -334,7 +334,7 @@ export default function DestructionPage() {
                             Phê duyệt
                           </button>
                         )}
-                        {prop.trangThai === "DA_DUYET" && (user?.role === "ADMIN" || user?.role === "RECORDS_OFFICER") && (
+                        {prop.trangThai === "DA_DUYET" && user?.role === "ADMIN" && (
                           <button
                             onClick={() => handleExecuteProposal(prop.id)}
                             className="px-3 py-1.5 bg-danger-red hover:bg-danger-red/90 text-white font-semibold text-[11px] rounded-lg transition-colors"

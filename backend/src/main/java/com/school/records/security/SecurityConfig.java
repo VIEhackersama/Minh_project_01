@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -40,8 +41,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 // Public Endpoints
-                .requestMatchers("/auth/login", "/auth/refresh", "/health").permitAll()
+                .requestMatchers("/auth/login", "/auth/refresh", "/health", "/qr/**").permitAll()
                 
+                // Admin Only Destruction Operations
+                .requestMatchers(HttpMethod.POST, "/destruction/*/approve", "/destruction/*/execute").hasRole("ADMIN")
+
                 // Admin & Officer Only Operations
                 .requestMatchers("/users/**").hasAnyRole("ADMIN", "RECORDS_OFFICER")
                 .requestMatchers("/reports/**").hasAnyRole("ADMIN", "RECORDS_OFFICER")
@@ -49,7 +53,7 @@ public class SecurityConfig {
                 
                 // Authenticated Operations for All Roles (including TEACHER)
                 .requestMatchers("/auth/me", "/auth/logout").authenticated()
-                .requestMatchers("/ho-so/**", "/tai-lieu-so-hoa/**", "/phieu-muon/**", "/qr/**", "/danh-muc-ho-so/**", "/vi-tri-luu-tru/**").authenticated()
+                .requestMatchers("/ho-so/**", "/tai-lieu-so-hoa/**", "/phieu-muon/**", "/danh-muc-ho-so/**", "/vi-tri-luu-tru/**").authenticated()
                 
                 // Require Authentication for any other request
                 .anyRequest().authenticated()

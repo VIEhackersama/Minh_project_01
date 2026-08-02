@@ -71,6 +71,7 @@ function RecordsContent() {
   // Create Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(shouldOpenCreateModal);
   const [retentionMode, setRetentionMode] = useState<"CATEGORY" | "MONTHS" | "DAYS" | "EXACT_DATE">("CATEGORY");
+  const [useDefaultRetention, setUseDefaultRetention] = useState(true);
   const [createForm, setCreateForm] = useState({
     tenHoSo: "",
     maHoSo: "",
@@ -100,32 +101,57 @@ function RecordsContent() {
   // Loan Request Modal State
   const [loanTargetRecord, setLoanTargetRecord] = useState<HoSo | null>(null);
 
-  // Edit Legal Date Modal State
+  // Edit Record Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<HoSo | null>(null);
-  const [editNgayLap, setEditNgayLap] = useState("");
+  const [editForm, setEditForm] = useState({
+    tenHoSo: "",
+    danhMucId: undefined as number | undefined,
+    phongKho: "",
+    keHang: "",
+    nganChua: "",
+    viTriId: undefined as number | undefined,
+    mucDoMat: "COMMON" as MucDoMat,
+    ngayLap: "",
+  });
   const [submittingEdit, setSubmittingEdit] = useState(false);
 
   const handleOpenEditModal = (record: HoSo) => {
     setEditingRecord(record);
-    setEditNgayLap(record.ngayLap || new Date().toISOString().split("T")[0]);
+    setEditForm({
+      tenHoSo: record.tenHoSo || "",
+      danhMucId: record.danhMuc?.id,
+      phongKho: record.viTri?.phongKho || "",
+      keHang: record.viTri?.keHang || "",
+      nganChua: record.viTri?.nganChua || "",
+      viTriId: record.viTri?.id,
+      mucDoMat: record.mucDoMat || "COMMON",
+      ngayLap: record.ngayLap || new Date().toISOString().split("T")[0],
+    });
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateNgayLap = async (e: React.FormEvent) => {
+  const handleUpdateRecord = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingRecord || !editNgayLap) return;
+    if (!editingRecord || !editForm.tenHoSo.trim() || !editForm.ngayLap) return;
 
     setSubmittingEdit(true);
     try {
       await updateHoSo(editingRecord.id, {
-        ngayLap: editNgayLap,
+        tenHoSo: editForm.tenHoSo.trim(),
+        danhMucId: editForm.danhMucId,
+        phongKho: editForm.phongKho.trim() || undefined,
+        keHang: editForm.keHang.trim() || undefined,
+        nganChua: editForm.nganChua.trim() || undefined,
+        viTriId: editForm.viTriId,
+        mucDoMat: editForm.mucDoMat,
+        ngayLap: editForm.ngayLap,
       });
       setIsEditModalOpen(false);
       setEditingRecord(null);
       fetchRecords();
     } catch (err: any) {
-      alert(err?.message || "Không thể cập nhật ngày lập pháp lý");
+      alert(err?.message || "Không thể cập nhật thông tin hồ sơ");
     } finally {
       setSubmittingEdit(false);
     }
@@ -406,44 +432,81 @@ function RecordsContent() {
                   <th className="px-5 py-4 whitespace-nowrap">Ngày Lập</th>
                   <th className="px-5 py-4 min-w-[200px]">Kho / Kệ / Ngăn</th>
                   <th className="px-5 py-4 min-w-[150px]">Danh Mục</th>
-                  <th className="px-5 py-4 whitespace-nowrap">Số Hóa</th>
+                  <th className="px-5 py-4 whitespace-nowrap">Trạng Thái Số Hóa</th>
                   <th className="px-5 py-4 whitespace-nowrap">Bảo Mật</th>
                   <th className="px-5 py-4 whitespace-nowrap">Trạng Thái Kho</th>
                   <th className="px-5 py-4 whitespace-nowrap text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-whisper-border">
-                {records.map((record) => (
-                  <tr key={record.id} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="font-mono font-bold text-primary">{record.maHoSo}</span>
-                    </td>
-                    <td className="px-5 py-4 font-semibold text-on-surface">{record.tenHoSo}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-secondary text-xs">
-                      <span className="inline-flex items-center gap-1 font-medium">
-                        <Calendar className="w-3.5 h-3.5 text-primary" />
-                        {record.ngayLap || "—"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      {record.viTri ? (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="inline-flex items-center gap-1 font-mono font-bold text-xs text-primary whitespace-nowrap">
-                            <MapPin className="w-3 h-3 text-primary shrink-0" />
-                            {record.viTri.maDinhDanhViTri}
+                {records.map((record) => {
+                  const isConfidentialCensored = record.mucDoMat === "CONFIDENTIAL" && !isArchivistOrAdmin;
+
+                  return (
+                    <tr key={record.id} className="hover:bg-surface-container-low transition-colors">
+                      <td className="px-5 py-4 whitespace-nowrap">
+                        <span className="font-mono font-bold text-primary">{record.maHoSo}</span>
+                      </td>
+                      <td className="px-5 py-4 font-semibold text-on-surface">
+                        {isConfidentialCensored ? (
+                          <span
+                            className="blur-[5px] select-none pointer-events-none opacity-60 inline-block"
+                            title="Tài liệu MẬT - Nội dung bị làm mờ"
+                          >
+                            {record.tenHoSo}
                           </span>
-                          <span className="text-[11px] text-secondary whitespace-nowrap">
-                            Kho: <b>{record.viTri.phongKho}</b> | Kệ: <b>{record.viTri.keHang}</b> | Ngăn: <b>{record.viTri.nganChua}</b>
+                        ) : (
+                          record.tenHoSo
+                        )}
+                      </td>
+                      <td className="px-5 py-4 whitespace-nowrap text-secondary text-xs">
+                        <span className="inline-flex items-center gap-1 font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-primary" />
+                          {isConfidentialCensored ? (
+                            <span className="blur-[5px] select-none pointer-events-none opacity-60">
+                              {record.ngayLap || "2026-00-00"}
+                            </span>
+                          ) : (
+                            record.ngayLap || "—"
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        {isConfidentialCensored ? (
+                          <span className="blur-[5px] select-none pointer-events-none opacity-60 text-xs font-mono block">
+                            Kho X / Kệ XX / Ngăn XX
                           </span>
-                        </div>
-                      ) : (
-                        <span className="text-secondary italic text-xs whitespace-nowrap">Chưa gán</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-secondary">{record.danhMuc?.tenLoai || "—"}</td>
+                        ) : record.viTri ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="inline-flex items-center gap-1 font-mono font-bold text-xs text-primary whitespace-nowrap">
+                              <MapPin className="w-3 h-3 text-primary shrink-0" />
+                              {record.viTri.maDinhDanhViTri}
+                            </span>
+                            <span className="text-[11px] text-secondary whitespace-nowrap">
+                              Kho: <b>{record.viTri.phongKho}</b> | Kệ: <b>{record.viTri.keHang}</b> | Ngăn: <b>{record.viTri.nganChua}</b>
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-secondary italic text-xs whitespace-nowrap">Chưa gán</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-secondary">
+                        {isConfidentialCensored ? (
+                          <span className="blur-[5px] select-none pointer-events-none opacity-60">
+                            {record.danhMuc?.tenLoai || "Danh mục Mật"}
+                          </span>
+                        ) : (
+                          record.danhMuc?.tenLoai || "—"
+                        )}
+                      </td>
 
                     <td className="px-5 py-4 whitespace-nowrap">
-                      {record.daSoHoa ? (
+                      {isConfidentialCensored ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-400 font-medium text-xs rounded-full border border-slate-200 whitespace-nowrap blur-[4px] select-none pointer-events-none opacity-60">
+                          <FileCode2 className="w-3.5 h-3.5 text-slate-400" />
+                          Bảo mật
+                        </span>
+                      ) : record.daSoHoa ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 font-semibold text-xs rounded-full border border-emerald-500/20 whitespace-nowrap">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           Đã số hóa ({record.soLuongTaiLieu || 1} file)
@@ -468,10 +531,16 @@ function RecordsContent() {
                       )}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      {renderHoSoStatusBadge(record.trangThai)}
+                      {isConfidentialCensored ? (
+                        <span className="blur-[5px] select-none pointer-events-none opacity-60">
+                          {renderHoSoStatusBadge(record.trangThai)}
+                        </span>
+                      ) : (
+                        renderHoSoStatusBadge(record.trangThai)
+                      )}
                     </td>
                     <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
-                      {record.trangThai === "DANG_LUU_KHO" && (
+                      {record.trangThai === "DANG_LUU_KHO" && !isConfidentialCensored && (
                         <button
                           onClick={() => setLoanTargetRecord(record)}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap"
@@ -482,14 +551,25 @@ function RecordsContent() {
                         </button>
                       )}
 
-                      <button
-                        onClick={() => setQrRecord(record)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap"
-                        title="Xem / In Mã QR Thẻ Dán"
-                      >
-                        <QrCode className="w-3.5 h-3.5" />
-                        Thẻ QR
-                      </button>
+                      {isConfidentialCensored ? (
+                        <button
+                          disabled
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 text-slate-400 opacity-40 cursor-not-allowed rounded-lg text-xs font-semibold whitespace-nowrap"
+                          title="Thẻ QR bị khóa đối với hồ sơ MẬT"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          Thẻ QR
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setQrRecord(record)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap"
+                          title="Xem / In Mã QR Thẻ Dán"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          Thẻ QR
+                        </button>
+                      )}
 
                       {isArchivistOrAdmin && (
                         <>
@@ -497,7 +577,7 @@ function RecordsContent() {
                             onClick={() => handleOpenDetailModal(record)}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap"
                           >
-                            <FileCheck className="w-3.5 h-3.5" />
+                            <Upload className="w-3.5 h-3.5" />
                             Số Hóa
                           </button>
 
@@ -520,7 +600,8 @@ function RecordsContent() {
                       )}
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>
@@ -622,65 +703,89 @@ function RecordsContent() {
 
               {/* Flexible Retention Expiration Options */}
               <div className="p-4 bg-surface-container-low rounded-2xl border border-whisper-border space-y-3">
-                <label className="block text-xs font-bold text-on-surface flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-warning-orange" />
-                  Tùy Chọn Thời Hạn Bảo Quản / Ngày Tiêu Hủy
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-secondary mb-1">Phương thức tính thời hạn</label>
-                    <select
-                      value={retentionMode}
-                      onChange={(e) => setRetentionMode(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="CATEGORY">Mặc định (Theo số năm Danh mục)</option>
-                      <option value="MONTHS">Theo số Tháng (VD: 6, 18, 36...)</option>
-                      <option value="DAYS">Theo số Ngày (VD: 30, 90, 180...)</option>
-                      <option value="EXACT_DATE">Chọn Ngày hết hạn cụ thể</option>
-                    </select>
-                  </div>
-
-                  {retentionMode === "MONTHS" && (
-                    <div>
-                      <label className="block text-[11px] font-semibold text-secondary mb-1">Số tháng bảo quản</label>
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="Nhập số tháng (VD: 6)"
-                        value={createForm.thoiHanBaoQuanThang || ""}
-                        onChange={(e) => setCreateForm({ ...createForm, thoiHanBaoQuanThang: Number(e.target.value) || undefined })}
-                        className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface"
-                      />
-                    </div>
-                  )}
-
-                  {retentionMode === "DAYS" && (
-                    <div>
-                      <label className="block text-[11px] font-semibold text-secondary mb-1">Số ngày bảo quản</label>
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="Nhập số ngày (VD: 90)"
-                        value={createForm.thoiHanBaoQuanNgay || ""}
-                        onChange={(e) => setCreateForm({ ...createForm, thoiHanBaoQuanNgay: Number(e.target.value) || undefined })}
-                        className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface"
-                      />
-                    </div>
-                  )}
-
-                  {retentionMode === "EXACT_DATE" && (
-                    <div>
-                      <label className="block text-[11px] font-semibold text-secondary mb-1">Ngày hết hạn tiêu hủy</label>
-                      <input
-                        type="date"
-                        value={createForm.thoiHanBaoQuanDen || ""}
-                        onChange={(e) => setCreateForm({ ...createForm, thoiHanBaoQuanDen: e.target.value || undefined })}
-                        className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface"
-                      />
-                    </div>
-                  )}
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-on-surface flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-warning-orange" />
+                    Tùy Chọn Thời Hạn Bảo Quản / Ngày Tiêu Hủy
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer select-none group">
+                    <input
+                      type="checkbox"
+                      id="useDefaultRetention"
+                      checked={useDefaultRetention}
+                      onChange={(e) => {
+                        setUseDefaultRetention(e.target.checked);
+                        if (e.target.checked) setRetentionMode("CATEGORY");
+                      }}
+                      className="w-4 h-4 rounded accent-primary cursor-pointer"
+                    />
+                    <span className="text-[11px] font-semibold text-secondary group-hover:text-on-surface transition-colors">
+                      Thiết lập ngày hết hạn mặc định
+                    </span>
+                  </label>
                 </div>
+
+                {useDefaultRetention ? (
+                  <p className="text-[11px] text-secondary italic">
+                    ✓ Ngày hết hạn sẽ được tính tự động theo số năm bảo quản của Danh mục đã chọn.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-secondary mb-1">Phương thức tính thời hạn</label>
+                      <select
+                        value={retentionMode}
+                        onChange={(e) => setRetentionMode(e.target.value as any)}
+                        className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="CATEGORY">Mặc định (Theo số năm Danh mục)</option>
+                        <option value="MONTHS">Theo số Tháng (VD: 6, 18, 36...)</option>
+                        <option value="DAYS">Theo số Ngày (VD: 30, 90, 180...)</option>
+                        <option value="EXACT_DATE">Chọn Ngày hết hạn cụ thể</option>
+                      </select>
+                    </div>
+
+                    {retentionMode === "MONTHS" && (
+                      <div>
+                        <label className="block text-[11px] font-semibold text-secondary mb-1">Số tháng bảo quản</label>
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="Nhập số tháng (VD: 6)"
+                          value={createForm.thoiHanBaoQuanThang || ""}
+                          onChange={(e) => setCreateForm({ ...createForm, thoiHanBaoQuanThang: Number(e.target.value) || undefined })}
+                          className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface"
+                        />
+                      </div>
+                    )}
+
+                    {retentionMode === "DAYS" && (
+                      <div>
+                        <label className="block text-[11px] font-semibold text-secondary mb-1">Số ngày bảo quản</label>
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="Nhập số ngày (VD: 90)"
+                          value={createForm.thoiHanBaoQuanNgay || ""}
+                          onChange={(e) => setCreateForm({ ...createForm, thoiHanBaoQuanNgay: Number(e.target.value) || undefined })}
+                          className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface"
+                        />
+                      </div>
+                    )}
+
+                    {retentionMode === "EXACT_DATE" && (
+                      <div>
+                        <label className="block text-[11px] font-semibold text-secondary mb-1">Ngày hết hạn tiêu hủy</label>
+                        <input
+                          type="date"
+                          value={createForm.thoiHanBaoQuanDen || ""}
+                          onChange={(e) => setCreateForm({ ...createForm, thoiHanBaoQuanDen: e.target.value || undefined })}
+                          className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Physical Storage Fields Box */}
@@ -983,89 +1088,153 @@ function RecordsContent() {
         onSuccess={fetchRecords}
       />
 
-      {/* EDIT LEGAL DATE ONLY MODAL */}
+      {/* EDIT HO SO FULL MODAL */}
       {isEditModalOpen && editingRecord && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-pure-surface rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-whisper-border animate-scale-in space-y-4">
+          <div className="bg-pure-surface rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-whisper-border animate-scale-in space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-whisper-border">
               <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-primary" />
-                Chỉnh Sửa Ngày Lập Hồ Sơ (Hiệu Lực Pháp Lý)
+                Chỉnh Sửa Thông Tin Hồ Sơ
               </h3>
               <button onClick={() => setIsEditModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateNgayLap} className="space-y-4">
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium leading-relaxed">
-                🔒 <b>Quy định bảo mật:</b> Để đảm bảo tính toàn vẹn dữ liệu, các thông tin định danh (Mã hồ sơ, Tên hồ sơ, Danh mục, Vị trí lưu kho) bị khóa không cho chỉnh sửa. Bạn chỉ được phép điều chỉnh <b>Ngày lập có hiệu lực pháp lý</b>.
-              </div>
-
-              {/* Readonly fields (Greyed out) */}
-              <div className="grid grid-cols-2 gap-3 opacity-60">
+            <form onSubmit={handleUpdateRecord} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-secondary mb-1">Mã Hồ Sơ</label>
+                  <label className="block text-[11px] font-semibold text-secondary mb-1">Mã Hồ Sơ (Cố định)</label>
                   <input
                     disabled
                     value={editingRecord.maHoSo}
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono cursor-not-allowed text-slate-600"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono cursor-not-allowed text-slate-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-secondary mb-1">Mức Độ Mật</label>
-                  <input
-                    disabled
-                    value={editingRecord.mucDoMat === "CONFIDENTIAL" ? "Mật" : "Thường"}
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs cursor-not-allowed text-slate-600"
-                  />
+                  <label className="block text-[11px] font-semibold text-secondary mb-1">Mức Độ Bảo Mật</label>
+                  <select
+                    value={editForm.mucDoMat}
+                    onChange={(e) => setEditForm({ ...editForm, mucDoMat: e.target.value as MucDoMat })}
+                    className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="COMMON">Thông thường (COMMON)</option>
+                    <option value="CONFIDENTIAL">Mật (CONFIDENTIAL)</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="opacity-60">
-                <label className="block text-[11px] font-semibold text-secondary mb-1">Tên Hồ Sơ</label>
+              <div>
+                <label className="block text-[11px] font-semibold text-secondary mb-1">Tên Hồ Sơ *</label>
                 <input
-                  disabled
-                  value={editingRecord.tenHoSo}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold cursor-not-allowed text-slate-600"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 opacity-60">
-                <div>
-                  <label className="block text-[11px] font-semibold text-secondary mb-1">Danh Mục Loại Hồ Sơ</label>
-                  <input
-                    disabled
-                    value={editingRecord.danhMuc?.tenLoai || "Chưa phân loại"}
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs cursor-not-allowed text-slate-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-secondary mb-1">Vị Trí Kho Vật Lý</label>
-                  <input
-                    disabled
-                    value={editingRecord.viTri ? `${editingRecord.viTri.phongKho} / ${editingRecord.viTri.keHang} / ${editingRecord.viTri.nganChua}` : "Chưa gán"}
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs cursor-not-allowed text-slate-600"
-                  />
-                </div>
-              </div>
-
-              {/* Editable Legal Date Field */}
-              <div className="pt-2">
-                <label className="block text-xs font-bold text-primary mb-1 flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  Ngày Lập Hồ Sơ (Ngày có hiệu lực pháp lý) <span className="text-danger-red">*</span>
-                </label>
-                <input
-                  type="date"
+                  type="text"
                   required
-                  value={editNgayLap}
-                  onChange={(e) => setEditNgayLap(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-pure-surface border-2 border-primary rounded-xl text-sm font-bold text-primary focus:ring-4 focus:ring-primary/20 focus:outline-none shadow-sm"
+                  value={editForm.tenHoSo}
+                  onChange={(e) => setEditForm({ ...editForm, tenHoSo: e.target.value })}
+                  placeholder="Nhập tên hồ sơ..."
+                  className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs font-semibold bg-pure-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
-                <span className="text-[11px] text-secondary mt-1 block">
-                  Thời hạn bảo quản lưu kho (`thoi_han_bao_quan_den`) sẽ tự động được tính toán lại dựa trên ngày pháp lý mới này.
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-secondary mb-1">Loại Hồ Sơ (Danh Mục)</label>
+                  <select
+                    value={editForm.danhMucId || ""}
+                    onChange={(e) => setEditForm({ ...editForm, danhMucId: e.target.value ? Number(e.target.value) : undefined })}
+                    className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs bg-pure-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">-- Chọn loại --</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.tenLoai} ({c.thoiHanBaoQuanNam} năm)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-secondary mb-1">Ngày Lập Hồ Sơ *</label>
+                  <input
+                    type="date"
+                    required
+                    value={editForm.ngayLap}
+                    onChange={(e) => setEditForm({ ...editForm, ngayLap: e.target.value })}
+                    className="w-full px-3 py-2 border border-whisper-border rounded-xl text-xs font-bold bg-pure-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
+
+              {/* Physical Storage Box */}
+              <div className="p-3.5 bg-surface-container rounded-2xl border border-whisper-border space-y-3">
+                <span className="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  Vị Trí Lưu Kho Vật Lý (Tách Riêng Kho - Kệ - Ngăn)
                 </span>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-secondary mb-1">Phòng Kho</label>
+                    <input
+                      type="text"
+                      value={editForm.phongKho}
+                      onChange={(e) => setEditForm({ ...editForm, phongKho: e.target.value, viTriId: undefined })}
+                      placeholder="VD: Kho A"
+                      className="w-full px-2.5 py-1.5 border border-whisper-border rounded-lg text-xs bg-pure-surface"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-secondary mb-1">Kệ Hàng</label>
+                    <input
+                      type="text"
+                      value={editForm.keHang}
+                      onChange={(e) => setEditForm({ ...editForm, keHang: e.target.value, viTriId: undefined })}
+                      placeholder="VD: Kệ 01"
+                      className="w-full px-2.5 py-1.5 border border-whisper-border rounded-lg text-xs bg-pure-surface"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-secondary mb-1">Ngăn Chứa</label>
+                    <input
+                      type="text"
+                      value={editForm.nganChua}
+                      onChange={(e) => setEditForm({ ...editForm, nganChua: e.target.value, viTriId: undefined })}
+                      placeholder="VD: Ngăn 03"
+                      className="w-full px-2.5 py-1.5 border border-whisper-border rounded-lg text-xs bg-pure-surface"
+                    />
+                  </div>
+                </div>
+
+                {locations.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-semibold text-secondary mb-1">Hoặc chọn từ kho hiện có:</label>
+                    <select
+                      value={editForm.viTriId || ""}
+                      onChange={(e) => {
+                        const val = e.target.value ? Number(e.target.value) : undefined;
+                        const loc = locations.find((l) => l.id === val);
+                        setEditForm({
+                          ...editForm,
+                          viTriId: val,
+                          phongKho: loc ? loc.phongKho : editForm.phongKho,
+                          keHang: loc ? loc.keHang : editForm.keHang,
+                          nganChua: loc ? loc.nganChua : editForm.nganChua,
+                        });
+                      }}
+                      className="w-full px-2.5 py-1.5 border border-whisper-border rounded-lg text-xs bg-pure-surface"
+                    >
+                      <option value="">-- Chọn vị trí sẵn có --</option>
+                      {locations.map((loc) => (
+                        <option key={loc.id} value={loc.id}>
+                          {loc.phongKho} / Kệ {loc.keHang} / Ngăn {loc.nganChua} ({loc.maDinhDanhViTri})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-whisper-border">
@@ -1082,7 +1251,7 @@ function RecordsContent() {
                   className="px-5 py-2 bg-primary hover:bg-primary-container text-on-primary font-semibold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
                 >
                   {submittingEdit && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Cập Nhật Ngày Pháp Lý
+                  Cập Nhật Hồ Sơ
                 </button>
               </div>
             </form>

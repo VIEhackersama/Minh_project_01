@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useAuth } from "@/components/auth-context";
 import {
   House,
@@ -9,9 +9,7 @@ import {
   ChartBar,
   Gear,
   SignOut,
-  MagnifyingGlass,
-  Bell,
-  Plus,
+
   Files,
   List,
   X,
@@ -27,13 +25,27 @@ import {
   SidebarSimple,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 const SIDEBAR_COLLAPSED_KEY = "eduarchive_sidebar_collapsed";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, logout, hasPermission } = useAuth();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab");
+
+  const isSubActive = (subHref: string) => {
+    if (subHref.includes("?")) {
+      const [path, query] = subHref.split("?");
+      const urlParams = new URLSearchParams(query);
+      const expectedTab = urlParams.get("tab");
+      const expectedStatus = urlParams.get("status");
+      if (expectedTab) return pathname === path && currentTab === expectedTab;
+      if (expectedStatus) return pathname === path && searchParams.get("status") === expectedStatus;
+    }
+    return pathname === subHref;
+  };
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
@@ -122,7 +134,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       name: "Hồ sơ & Tài liệu",
       icon: FolderOpen,
       subItems: [
-        { name: "Tải lên & Phân loại", href: "/dashboard/records", icon: Archive },
+        { name: "Danh sách hồ sơ", href: "/dashboard/records", icon: Archive },
         ...(isArchivistOrAdmin
           ? [
               { name: "Vị trí lưu trữ", href: "/dashboard/storage", icon: Gauge },
@@ -141,23 +153,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { name: "Cảnh báo quá hạn", href: "/dashboard/loans?status=QUA_HAN", icon: ShieldWarning },
       ],
     },
-    {
-      id: "reports",
-      name: "Báo cáo & Thống kê",
-      icon: ChartBar,
-      subItems: [
-        { name: "Kiểm kê kho vật lý", href: "/dashboard/reports", icon: Gauge },
-        { name: "Tình trạng mượn trả", href: "/dashboard/reports", icon: ArrowsLeftRight },
-        { name: "Tiêu hủy tài liệu", href: "/dashboard/reports", icon: Trash },
-      ],
-    },
+    ...(isArchivistOrAdmin
+      ? [
+          {
+            id: "reports",
+            name: "Báo cáo & Thống kê",
+            icon: ChartBar,
+            subItems: [
+              { name: "Kiểm kê kho vật lý", href: "/dashboard/reports?tab=inventory", icon: Gauge },
+              { name: "Tình trạng mượn trả", href: "/dashboard/reports?tab=loans", icon: ArrowsLeftRight },
+              { name: "Tiêu hủy tài liệu", href: "/dashboard/reports?tab=destruction", icon: Trash },
+            ],
+          },
+        ]
+      : []),
   ];
 
   const sidebarW = collapsed ? "72px" : "280px";
 
   const renderSidebarContent = (onLinkClick?: () => void) => (
     <div className="flex flex-col gap-1.5 w-full">
-      {/* Home */}
       <Link
         href="/dashboard"
         onClick={onLinkClick}
@@ -174,12 +189,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="my-2 border-t border-white/[0.06]" />
 
-      {/* Module Groups */}
       <div className="flex flex-col gap-1">
         {moduleGroups.map((mod) => {
           const Icon = mod.icon;
           const isExpanded = !!expandedModules[mod.id];
-          const hasActiveSub = mod.subItems.some((sub) => pathname === sub.href || pathname.startsWith(sub.href + "?"));
+          const hasActiveSub = mod.subItems.some((sub) => isSubActive(sub.href));
 
           return (
             <div key={mod.id}>
@@ -209,12 +223,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
               </button>
 
-              {/* Sub-items */}
               {!collapsed && isExpanded && (
                 <div className="ml-[15px] pl-3 mt-1 mb-1 border-l border-white/[0.08] flex flex-col gap-0.5">
                   {mod.subItems.map((sub, idx) => {
                     const SubIcon = sub.icon;
-                    const isActive = pathname === sub.href || pathname.startsWith(sub.href + "?");
+                    const isActive = isSubActive(sub.href);
                     return (
                       <Link
                         key={idx}
@@ -242,7 +255,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const sidebarContent = (isMobile = false, onLinkClick?: () => void) => (
     <div className="flex flex-col h-full">
-      {/* Logo area */}
       <div className={`flex items-center gap-3 px-4 py-5 ${collapsed && !isMobile ? "justify-center px-3" : ""}`}>
         <div className="shrink-0 w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center border border-primary/25">
           <Files size={16} weight="fill" className="text-primary-fixed-dim" />
@@ -348,9 +360,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{ paddingLeft: `${collapsed ? "72px" : "280px"}` }}
         className="flex-1 flex flex-col min-h-screen md:transition-[padding-left] duration-300 ease-in-out max-md:pl-0"
       >
-        {/* Header */}
-        <header className="sticky top-0 h-[60px] bg-pure-surface/90 backdrop-blur-xl z-30 border-b border-whisper-border px-5 md:px-8 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1 max-w-xl">
+        {/* Header (Mobile only) */}
+        <header className="sticky top-0 h-[60px] bg-pure-surface/90 backdrop-blur-xl z-30 border-b border-whisper-border px-5 md:hidden flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -358,34 +370,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <List size={20} />
             </button>
-
-            {/* Search Bar */}
-            <div className="relative w-full hidden sm:block">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" size={15} />
-              <input
-                type="search"
-                placeholder="Tìm kiếm hồ sơ, học sinh..."
-                className="w-full pl-9 pr-4 py-2 bg-surface-container-low border border-transparent rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-pure-surface focus:border-outline-variant/40 transition-all placeholder:text-outline"
-              />
-            </div>
-          </div>
-
-          {/* Right controls */}
-          <div className="flex items-center gap-2">
-            <button className="relative p-2 text-on-surface-variant hover:bg-surface-container rounded-xl transition-colors">
-              <Bell size={18} />
-              <span className="absolute top-[7px] right-[7px] w-1.5 h-1.5 bg-danger-red rounded-full ring-2 ring-pure-surface" />
-            </button>
-
-            {isArchivistOrAdmin && (
-              <Link
-                href="/dashboard/records?create=true"
-                className="flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary rounded-lg text-[13px] font-semibold shadow-sm shadow-primary/20 hover:bg-primary-container active:scale-[0.98] transition-all"
-              >
-                <Plus size={16} weight="bold" />
-                <span className="hidden md:inline">Tạo hồ sơ</span>
-              </Link>
-            )}
           </div>
         </header>
 
@@ -395,5 +379,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={null}>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </Suspense>
   );
 }
