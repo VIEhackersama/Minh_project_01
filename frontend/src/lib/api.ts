@@ -1,6 +1,14 @@
 import { getGlobalToken, setGlobalToken } from "./token";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+export const getBaseUrl = (): string => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== "undefined") {
+    return "/api";
+  }
+  return "http://localhost:8080/api";
+};
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
@@ -8,6 +16,18 @@ interface RequestOptions extends RequestInit {
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
+
+let onAccessDeniedHandler: ((message: string) => void) | null = null;
+
+export function setOnAccessDenied(handler: (message: string) => void) {
+  onAccessDeniedHandler = handler;
+}
+
+export function triggerAccessDenied(message: string) {
+  if (onAccessDeniedHandler) {
+    onAccessDeniedHandler(message);
+  }
+}
 
 function subscribeTokenRefresh(cb: (token: string) => void) {
   refreshSubscribers.push(cb);
@@ -20,8 +40,9 @@ function onRefreshed(token: string) {
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { params, headers, ...restOptions } = options;
+  const baseUrl = getBaseUrl();
 
-  let url = `${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  let url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
   if (params) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, val]) => {
@@ -60,7 +81,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     if (!isRefreshing) {
       isRefreshing = true;
       try {
-        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
+        const refreshResponse = await fetch(`${baseUrl}/auth/refresh`, {
           method: "POST",
           credentials: "include",
           headers: {
@@ -122,7 +143,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     } catch {
       errorData = { message: `HTTP error! Status: ${response.status}` };
     }
-    throw new Error(errorData?.message || errorData?.error || `Request failed with status ${response.status}`);
+    const msg = errorData?.message || errorData?.error || `Thao tác thất bại (${response.status})`;
+    if (response.status === 403 && onAccessDeniedHandler) {
+      onAccessDeniedHandler(msg);
+    }
+    throw new Error(msg);
   }
 
   if (response.status === 204) {
@@ -159,7 +184,8 @@ export const api = {
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
-    const url = `${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+    const baseUrl = getBaseUrl();
+    const url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
     const response = await fetch(url, {
       method: "POST",
       credentials: "include",
@@ -173,11 +199,14 @@ export const api = {
       } catch {
         errData = { message: `Upload failed with status ${response.status}` };
       }
-      throw new Error(errData?.message || "Upload failed");
+      const msg = errData?.message || "Upload failed";
+      if (response.status === 403 && onAccessDeniedHandler) {
+        onAccessDeniedHandler(msg);
+      }
+      throw new Error(msg);
     }
     return response.json() as Promise<T>;
   },
 };
 
 export const apiClient = api;
-

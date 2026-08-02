@@ -20,10 +20,12 @@ import {
   ArrowsClockwise,
 } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api";
 
 export default function DashboardHome() {
   const { user } = useAuth();
+  const router = useRouter();
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [scanningOverdue, setScanningOverdue] = useState(false);
@@ -42,8 +44,12 @@ export default function DashboardHome() {
   };
 
   useEffect(() => {
+    if (user && user.role === "TEACHER") {
+      router.replace("/dashboard/records");
+      return;
+    }
     fetchSummary();
-  }, []);
+  }, [user, router]);
 
   const handleScanOverdue = async () => {
     try {

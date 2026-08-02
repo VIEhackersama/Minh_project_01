@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { getBaseUrl } from "@/lib/api";
 import { 
   searchHoSo, 
   createHoSo, 
@@ -891,7 +892,7 @@ function RecordsContent() {
 
                       <div className="flex items-center gap-2">
                         <a
-                          href={`http://localhost:8080/api/tai-lieu-so-hoa/download/${doc.id}`}
+                          href={`${getBaseUrl()}/tai-lieu-so-hoa/download/${doc.id}`}
                           target="_blank"
                           rel="noreferrer"
                           className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
@@ -941,7 +942,7 @@ function RecordsContent() {
 
             <div className="p-4 bg-white rounded-2xl border-2 border-slate-200 shadow-inner flex flex-col items-center gap-3 w-full">
               <img
-                src={`http://localhost:8080/api/qr/ho-so/${qrRecord.id}?width=250&height=250`}
+                src={`${getBaseUrl()}/qr/ho-so/${qrRecord.id}?width=250&height=250`}
                 alt={`QR ${qrRecord.maHoSo}`}
                 className="w-48 h-48 object-contain"
               />
@@ -956,7 +957,7 @@ function RecordsContent() {
 
             <div className="flex gap-2 w-full">
               <a
-                href={`http://localhost:8080/api/qr/ho-so/${qrRecord.id}?width=500&height=500`}
+                href={`${getBaseUrl()}/qr/ho-so/${qrRecord.id}?width=500&height=500`}
                 target="_blank"
                 download={`QR_${qrRecord.maHoSo}.png`}
                 className="flex-1 py-2 bg-primary text-on-primary rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm hover:bg-primary-container"
