@@ -1,0 +1,33 @@
+# ==============================================================
+# Ngrok Tunnel Override
+# Usage:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.ngrok.yml up -d
+# ==============================================================
+
+services:
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: school-records-ngrok
+    restart: unless-stopped
+    command: >
+      http nginx:80
+      --url=gauze-broaden-awkward.ngrok-free.dev
+      --log=stdout
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - nginx
+    networks:
+      - default
+
+  # Override backend to include ngrok domain in CORS
+  backend:
+    environment:
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_NGROK}
+
+  # Frontend: use relative /api path (already correct in prod)
+  frontend:
+    environment:
+      NEXT_PUBLIC_API_URL: /api
