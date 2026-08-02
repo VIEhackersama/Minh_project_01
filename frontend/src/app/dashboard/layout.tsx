@@ -59,7 +59,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const isAdmin = user?.role === "ADMIN" || hasPermission("SYS_ADMIN");
 
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
-    system: pathname.startsWith("/dashboard/users"),
+    system: pathname.startsWith("/dashboard/users") || pathname.startsWith("/dashboard/audit-logs"),
     records:
       pathname.startsWith("/dashboard/records") ||
       pathname.startsWith("/dashboard/storage") ||
@@ -72,7 +72,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setExpandedModules((prev) => ({
       ...prev,
-      system: prev.system || pathname.startsWith("/dashboard/users"),
+      system: prev.system || pathname.startsWith("/dashboard/users") || pathname.startsWith("/dashboard/audit-logs"),
       records:
         prev.records ||
         pathname.startsWith("/dashboard/records") ||
@@ -124,7 +124,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             icon: Gear,
             subItems: [
               { name: "Phân quyền & Tài khoản", href: "/dashboard/users", icon: ShieldWarning },
-              { name: "Cấu hình & Audit log", href: "/dashboard/users", icon: Files },
+              { name: "Cấu hình & Audit log", href: "/dashboard/audit-logs", icon: Files },
             ],
           },
         ]

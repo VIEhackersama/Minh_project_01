@@ -47,6 +47,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/destruction/*/approve", "/destruction/*/execute").hasRole("ADMIN")
 
                 // Admin & Officer Only Operations
+                .requestMatchers("/admin/**").hasAnyRole("ADMIN", "RECORDS_OFFICER", "SYS_ADMIN")
                 .requestMatchers("/users/**").hasAnyRole("ADMIN", "RECORDS_OFFICER")
                 .requestMatchers("/reports/**").hasAnyRole("ADMIN", "RECORDS_OFFICER")
                 .requestMatchers("/destruction/**").hasAnyRole("ADMIN", "RECORDS_OFFICER")
@@ -84,12 +85,16 @@ public class SecurityConfig {
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
 
-        if (origins.contains("*")) {
+        if (origins.contains("*") || origins.isEmpty()) {
             configuration.addAllowedOriginPattern("*");
         } else {
-            configuration.setAllowedOrigins(origins);
+            for (String origin : origins) {
+                configuration.addAllowedOriginPattern(origin);
+            }
+            configuration.addAllowedOriginPattern("http://*");
+            configuration.addAllowedOriginPattern("https://*");
         }
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
