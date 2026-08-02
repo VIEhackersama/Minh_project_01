@@ -95,6 +95,12 @@ export default function LoanManagementPage() {
             <XCircle className="w-3 h-3" /> Từ chối
           </span>
         );
+      case "QUA_HAN":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-100 text-rose-800 font-bold text-xs rounded-full border border-rose-300 shadow-sm animate-pulse whitespace-nowrap">
+            <AlertCircle className="w-4 h-4 text-rose-600" /> Quá hạn mượn
+          </span>
+        );
       default:
         return <span className="text-xs text-secondary">{status}</span>;
     }

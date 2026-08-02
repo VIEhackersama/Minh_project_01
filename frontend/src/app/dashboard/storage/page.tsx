@@ -8,10 +8,24 @@ import {
   deleteViTri, 
   ViTriLuuTru 
 } from "@/lib/recordsApi";
-import { Archive, Plus, Edit2, Trash2, Search, Loader2, MapPin } from "lucide-react";
+import { Archive, Plus, Edit2, Trash2, Search, Loader2, MapPin, ShieldAlert } from "lucide-react";
+import { useAuth } from "@/components/auth-context";
 
 export default function StoragePage() {
+  const { user, hasPermission } = useAuth();
   const [locations, setLocations] = useState<ViTriLuuTru[]>([]);
+
+  if (user && user.role !== "ADMIN" && user.role !== "RECORDS_OFFICER" && !hasPermission("RECORD_MANAGE")) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+        <ShieldAlert className="w-16 h-16 text-rose-500" />
+        <h2 className="text-xl font-bold text-on-surface">Không Có Quyền Truy Cập</h2>
+        <p className="text-sm text-secondary max-w-md">
+          Chức năng Quản lý Vị trí Kho Vật lý chỉ dành cho Cán bộ Văn thư & Quản trị viên.
+        </p>
+      </div>
+    );
+  }
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);

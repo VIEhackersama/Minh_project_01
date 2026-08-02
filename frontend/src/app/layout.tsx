@@ -15,8 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EduArchive - Hệ thống Số hóa Quản lý Hồ sơ Giấy - Trường Tiểu học",
-  description: "Hệ thống quản lý, số hóa, mượn trả và kiểm kê hồ sơ học sinh, giáo viên của Trường Tiểu học. An toàn, bảo mật thông tin.",
+  title: "EduArchive — Quản lý Hồ sơ Giáo dục",
+  description: "Hệ thống số hóa, quản lý, mượn trả và kiểm kê hồ sơ học sinh, giáo viên. An toàn và bảo mật.",
+  openGraph: {
+    title: "EduArchive — Quản lý Hồ sơ Giáo dục",
+    description: "Hệ thống số hóa, quản lý, mượn trả và kiểm kê hồ sơ học sinh, giáo viên.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -30,6 +35,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-canvas-white text-on-surface font-sans">
+        <a href="#main-content" className="skip-to-content">Chuyển đến nội dung chính</a>
         <Providers>
           <AuthProvider>
             {children}

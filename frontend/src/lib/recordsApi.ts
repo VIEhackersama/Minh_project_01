@@ -4,6 +4,7 @@ export interface DanhMucLoaiHoSo {
   id: number;
   tenLoai: string;
   thoiHanBaoQuanNam: number;
+  donViThoiHan?: string;
   moTa?: string;
 }
 
@@ -96,12 +97,24 @@ export const createHoSo = (data: {
   keHang?: string;
   nganChua?: string;
   ngayLap?: string;
+  thoiHanBaoQuanThang?: number;
+  thoiHanBaoQuanNgay?: number;
+  thoiHanBaoQuanDen?: string;
   trangThai?: TrangThaiHoSo;
   mucDoMat?: MucDoMat;
 }) => api.post<HoSo>("/ho-so", data);
 
-export const updateHoSo = (id: number, data: Partial<HoSo> & { danhMucId?: number; viTriId?: number; phongKho?: string; keHang?: string; nganChua?: string }) =>
-  api.put<HoSo>(`/ho-so/${id}`, data);
+export const updateHoSo = (id: number, data: Partial<HoSo> & {
+  danhMucId?: number;
+  viTriId?: number;
+  phongKho?: string;
+  keHang?: string;
+  nganChua?: string;
+  ngayLap?: string;
+  thoiHanBaoQuanThang?: number;
+  thoiHanBaoQuanNgay?: number;
+  thoiHanBaoQuanDen?: string;
+}) => api.put<HoSo>(`/ho-so/${id}`, data);
 
 export const deleteHoSo = (id: number) => api.delete(`/ho-so/${id}`);
 

@@ -119,6 +119,30 @@ public class MuonTraService {
         return phieuMuonRepository.save(phieuMuon);
     }
 
+    @Autowired
+    private com.school.records.modules.admin.service.AuditService auditService;
+
+    @Transactional
+    public int checkAndMarkOverdueLoans() {
+        List<TrangThaiPhieuMuon> activeStatuses = List.of(
+                TrangThaiPhieuMuon.CHO_DUYET,
+                TrangThaiPhieuMuon.DA_DUYET,
+                TrangThaiPhieuMuon.DANG_MUON
+        );
+        List<PhieuMuon> overdueList = phieuMuonRepository.findByTrangThaiInAndNgayHenTraBefore(activeStatuses, LocalDate.now());
+
+        for (PhieuMuon pm : overdueList) {
+            pm.setTrangThai(TrangThaiPhieuMuon.QUA_HAN);
+            phieuMuonRepository.save(pm);
+        }
+
+        if (!overdueList.isEmpty() && auditService != null) {
+            auditService.log("SYSTEM", "CANH_BAO_QUA_HAN", "Hệ thống tự động phát hiện và chuyển " + overdueList.size() + " phiếu mượn sang trạng thái QUA_HAN", null);
+        }
+
+        return overdueList.size();
+    }
+
     public Page<PhieuMuon> searchPhieuMuon(String query, String statusStr, String username, int page, int size) {
         Specification<PhieuMuon> spec = (root, q, cb) -> {
             List<Predicate> predicates = new ArrayList<>();

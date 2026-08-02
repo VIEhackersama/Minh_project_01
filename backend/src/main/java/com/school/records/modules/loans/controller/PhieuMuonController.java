@@ -136,6 +136,30 @@ public class PhieuMuonController {
         }
     }
 
+    @PostMapping("/check-overdue")
+    public ResponseEntity<?> checkOverdue(HttpServletRequest servletRequest) {
+        try {
+            String currentUsername = getCurrentUsername();
+            int updatedCount = muonTraService.checkAndMarkOverdueLoans();
+
+            auditService.log(
+                    currentUsername,
+                    "THUC_THI_QUET_QUA_HAN",
+                    "Thực thi quét và chuyển " + updatedCount + " phiếu mượn quá hạn",
+                    servletRequest
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Đã quét và cập nhật thành công",
+                    "updatedCount", updatedCount
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", e.getMessage()));
+        }
+    }
+
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

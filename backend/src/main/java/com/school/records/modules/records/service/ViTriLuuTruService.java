@@ -1,6 +1,7 @@
 package com.school.records.modules.records.service;
 
 import com.school.records.modules.records.entity.ViTriLuuTru;
+import com.school.records.modules.records.repository.HoSoRepository;
 import com.school.records.modules.records.repository.ViTriLuuTruRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,9 @@ import java.util.List;
 public class ViTriLuuTruService {
     @Autowired
     private ViTriLuuTruRepository repository;
+
+    @Autowired
+    private HoSoRepository hoSoRepository;
 
     public List<ViTriLuuTru> getAll() {
         return repository.findAll();
@@ -75,6 +79,9 @@ public class ViTriLuuTruService {
 
     public void delete(Long id) {
         ViTriLuuTru existing = getById(id);
+        if (hoSoRepository.existsByViTriId(id)) {
+            throw new IllegalStateException("Không thể xóa vị trí kho '" + existing.getMaDinhDanhViTri() + "' vì đang có hồ sơ lưu trữ tại vị trí này. Vui lòng di chuyển các hồ sơ sang vị trí khác trước khi xóa!");
+        }
         repository.delete(existing);
     }
 

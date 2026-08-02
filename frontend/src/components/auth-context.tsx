@@ -1,8 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { api } from "@/lib/api";
+import { api, setOnAccessDenied } from "@/lib/api";
 import { useRouter, usePathname } from "next/navigation";
+import { AccessDeniedModal } from "@/components/AccessDeniedModal";
 
 import { setGlobalToken, getGlobalToken } from "@/lib/token";
 
@@ -23,6 +24,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshSession: () => Promise<string | null>;
   hasPermission: (permission: string) => boolean;
+  triggerAccessDeniedModal: (message: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,9 +46,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return getGlobalToken();
   });
 
+  const [accessDeniedMessage, setAccessDeniedMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    setOnAccessDenied((msg) => {
+      setAccessDeniedMessage(msg);
+    });
+  }, []);
 
   const setUser = useCallback((profile: UserProfile | null) => {
     setUserState(profile);
@@ -92,7 +101,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     setAccessToken(data.accessToken);
     setUser(data.user);
-    router.push("/dashboard");
+    if (data.user?.role === "TEACHER") {
+      router.push("/dashboard/records");
+    } else {
+      router.push("/dashboard");
+    }
   };
 
   const logout = async () => {
@@ -126,12 +139,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
+    if (pathname === "/") {
+      if (user) {
+        if (user.role === "TEACHER") {
+          router.replace("/dashboard/records");
+        } else {
+          router.replace("/dashboard");
+        }
+      } else {
+        router.replace("/login");
+      }
+      return;
+    }
+
     const isAuthRoute = pathname === "/login";
     
     if (!user && !isAuthRoute) {
-      router.push("/login");
+      router.replace("/login");
     } else if (user && isAuthRoute) {
-      router.push("/dashboard");
+      if (user.role === "TEACHER") {
+        router.replace("/dashboard/records");
+      } else {
+        router.replace("/dashboard");
+      }
     }
   }, [user, isLoading, pathname, router]);
 
@@ -143,9 +173,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       refreshSession,
-      hasPermission
+      hasPermission,
+      triggerAccessDeniedModal: setAccessDeniedMessage
     }}>
       {children}
+      <AccessDeniedModal
+        message={accessDeniedMessage}
+        onClose={() => setAccessDeniedMessage(null)}
+      />
     </AuthContext.Provider>
   );
 }

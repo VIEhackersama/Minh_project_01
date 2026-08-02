@@ -48,6 +48,18 @@ export default function UserManagementPage() {
   const { hasPermission, user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
+  if (currentUser && currentUser.role !== "ADMIN" && !hasPermission("SYS_ADMIN")) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+        <ShieldAlert className="w-16 h-16 text-rose-500" />
+        <h2 className="text-xl font-bold text-on-surface">Không Có Quyền Truy Cập</h2>
+        <p className="text-sm text-secondary max-w-md">
+          Chức năng Quản lý Hệ thống & Tài khoản chỉ dành riêng cho Quản trị viên (ADMIN). Vui lòng liên hệ Admin để được cấp quyền.
+        </p>
+      </div>
+    );
+  }
+
   // Search & filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");

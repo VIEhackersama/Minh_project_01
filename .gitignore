@@ -1,0 +1,21 @@
+# Environment secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# IDE & OS files
+.idea/
+.vscode/
+*.swp
+*.DS_Store
+Thumbs.db
+
+# Build artifacts
+target/
+.next/
+dist/
+out/
+node_modules/
