@@ -17,7 +17,21 @@ import {
   ShieldCheck,
   RefreshCw,
   Monitor,
-  Calendar
+  FolderPlus,
+  FileEdit,
+  Trash2,
+  BookOpen,
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  Upload,
+  Download,
+  Flame,
+  UserPlus,
+  UserCheck,
+  UserX,
+  Lock,
+  Unlock
 } from "lucide-react";
 
 interface AuditLog {
@@ -41,11 +55,14 @@ interface AuditLogPageResponse {
 const ACTION_GROUPS = [
   { label: "Tất cả", value: "ALL" },
   { label: "Đăng nhập", value: "DANG_NHAP" },
-  { label: "Đăng nhập thất bại", value: "DANG_NHAP_THAT_BAI" },
-  { label: "Tạo tài khoản", value: "TAO_TAI_KHOAN" },
-  { label: "Cập nhật tài khoản", value: "CAP_NHAT_TAI_KHOAN" },
-  { label: "Khóa/Mở khóa", value: "KHOA_TAI_KHOAN" },
+  { label: "Đăng xuất", value: "DANG_XUAT" },
+  { label: "Tạo hồ sơ", value: "TAO_HO_SO" },
+  { label: "Phê duyệt mượn", value: "DUYET_MUON_HO_SO" },
+  { label: "Đăng ký mượn", value: "DAT_GIU_HO_SO" },
+  { label: "Xác nhận trả", value: "XAC_NHAN_TRA_HO_SO" },
+  { label: "Quét quá hạn", value: "THUC_THI_QUET_QUA_HAN" },
   { label: "Cảnh báo quá hạn", value: "CANH_BAO_QUA_HAN" },
+  { label: "Tài khoản", value: "TAO_TAI_KHOAN" },
   { label: "Tiêu hủy", value: "PHE_DUYET_TIEU_HUY" },
 ];
 
@@ -95,6 +112,7 @@ export default function AuditLogsPage() {
 
   const getActionBadge = (action: string) => {
     switch (action) {
+      // ── HỆ THỐNG & ĐĂNG NHẬP ──
       case "DANG_NHAP":
         return {
           label: "Đăng nhập",
@@ -113,35 +131,91 @@ export default function AuditLogsPage() {
           bg: "bg-slate-500/10 text-slate-700 border-slate-500/20",
           icon: KeyRound
         };
+
+      // ── TÀI KHOẢN ──
       case "TAO_TAI_KHOAN":
         return {
           label: "Tạo tài khoản",
           bg: "bg-blue-500/10 text-blue-700 border-blue-500/20",
-          icon: User
+          icon: UserPlus
         };
       case "CAP_NHAT_TAI_KHOAN":
         return {
           label: "Cập nhật tài khoản",
           bg: "bg-sky-500/10 text-sky-700 border-sky-500/20",
-          icon: Activity
+          icon: UserCheck
         };
       case "XOA_TAI_KHOAN":
         return {
           label: "Xóa tài khoản",
           bg: "bg-rose-500/10 text-rose-700 border-rose-500/20",
-          icon: ShieldAlert
+          icon: UserX
         };
       case "KHOA_TAI_KHOAN":
         return {
           label: "Khóa tài khoản",
           bg: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-          icon: ShieldAlert
+          icon: Lock
         };
       case "MO_KHOA_TAI_KHOAN":
         return {
-          label: "Mở khóa",
+          label: "Mở khóa tài khoản",
           bg: "bg-teal-500/10 text-teal-700 border-teal-500/20",
-          icon: ShieldCheck
+          icon: Unlock
+        };
+
+      // ── QUẢN LÝ HỒ SƠ ──
+      case "TAO_HO_SO":
+        return {
+          label: "Tạo hồ sơ",
+          bg: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+          icon: FolderPlus
+        };
+      case "CAP_NHAT_HO_SO":
+      case "SUA_HO_SO":
+        return {
+          label: "Cập nhật hồ sơ",
+          bg: "bg-sky-500/10 text-sky-700 border-sky-500/20",
+          icon: FileEdit
+        };
+      case "XOA_HO_SO":
+        return {
+          label: "Xóa hồ sơ",
+          bg: "bg-rose-500/10 text-rose-700 border-rose-500/20",
+          icon: Trash2
+        };
+
+      // ── MƯỢN TRẢ & CẢNH BÁO QUÁ HẠN ──
+      case "DAT_GIU_HO_SO":
+      case "DANG_KY_MUON":
+        return {
+          label: "Đăng ký mượn",
+          bg: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20",
+          icon: BookOpen
+        };
+      case "DUYET_MUON_HO_SO":
+        return {
+          label: "Duyệt mượn hồ sơ",
+          bg: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+          icon: CheckCircle2
+        };
+      case "TU_CHOI_MUON_HO_SO":
+        return {
+          label: "Từ chối mượn",
+          bg: "bg-rose-500/10 text-rose-700 border-rose-500/20",
+          icon: XCircle
+        };
+      case "XAC_NHAN_TRA_HO_SO":
+        return {
+          label: "Xác nhận trả",
+          bg: "bg-teal-500/10 text-teal-700 border-teal-500/20",
+          icon: RotateCcw
+        };
+      case "THUC_THI_QUET_QUA_HAN":
+        return {
+          label: "Quét quá hạn",
+          bg: "bg-purple-500/10 text-purple-700 border-purple-500/20",
+          icon: RefreshCw
         };
       case "CANH_BAO_QUA_HAN":
         return {
@@ -149,19 +223,62 @@ export default function AuditLogsPage() {
           bg: "bg-amber-500/10 text-amber-700 border-amber-500/20",
           icon: AlertCircle
         };
+
+      // ── TÀI LIỆU SỐ HÓA ──
+      case "UPLOAD_TAI_LIEU":
+        return {
+          label: "Tải lên tài liệu",
+          bg: "bg-cyan-500/10 text-cyan-700 border-cyan-500/20",
+          icon: Upload
+        };
+      case "XOA_TAI_LIEU":
+        return {
+          label: "Xóa tài liệu",
+          bg: "bg-rose-500/10 text-rose-700 border-rose-500/20",
+          icon: Trash2
+        };
+      case "TAI_TAI_LIEU":
+        return {
+          label: "Tải tài liệu",
+          bg: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+          icon: Download
+        };
+
+      // ── TIÊU HỦY ──
+      case "TAO_DE_XUAT_TIEU_HUY":
+        return {
+          label: "Đề xuất tiêu hủy",
+          bg: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+          icon: Flame
+        };
       case "PHE_DUYET_TIEU_HUY":
+        return {
+          label: "Duyệt tiêu hủy",
+          bg: "bg-purple-500/10 text-purple-700 border-purple-500/20",
+          icon: CheckCircle2
+        };
       case "THUC_THI_TIEU_HUY":
         return {
-          label: "Tiêu hủy",
-          bg: "bg-purple-500/10 text-purple-700 border-purple-500/20",
-          icon: FileText
+          label: "Thực thi tiêu hủy",
+          bg: "bg-rose-500/10 text-rose-700 border-rose-500/20",
+          icon: Flame
         };
-      default:
+
+      // ── DEFAULT FALLBACK FORMATTER ──
+      default: {
+        // Formats SNAKE_CASE into clean Vietnamese title words
+        const formattedLabel = action
+          .toLowerCase()
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+
         return {
-          label: action,
+          label: formattedLabel || action,
           bg: "bg-primary/10 text-primary border-primary/20",
           icon: Activity
         };
+      }
     }
   };
 

@@ -72,6 +72,13 @@ public class PhieuMuonController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size
     ) {
+        // Auto check & mark overdue loans on fetch
+        try {
+            muonTraService.checkAndMarkOverdueLoans();
+        } catch (Exception e) {
+            // Log error silently if auto-check encounters issue
+        }
+
         String filterUser = onlyMine ? getCurrentUsername() : null;
         Page<PhieuMuon> phieuPage = muonTraService.searchPhieuMuon(query, status, filterUser, page, size);
 

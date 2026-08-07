@@ -48,6 +48,10 @@ export async function xacNhanTraHoSo(id: number) {
   return api.post<PhieuMuon>(`/phieu-muon/${id}/tra`);
 }
 
+export async function checkOverdueLoans() {
+  return api.post<{ message: string; updatedCount: number }>("/phieu-muon/check-overdue");
+}
+
 export async function decodeQrImage(file: File) {
   const formData = new FormData();
   formData.append("file", file);

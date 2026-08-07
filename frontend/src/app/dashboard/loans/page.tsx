@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth-context";
 import { 
@@ -31,11 +32,20 @@ import {
 export default function LoanManagementPage() {
   const { user, hasPermission } = useAuth();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const initialStatus = searchParams.get("status") || "ALL";
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [onlyMine, setOnlyMine] = useState(false);
   const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    const statusFromUrl = searchParams.get("status");
+    if (statusFromUrl) {
+      setStatusFilter(statusFromUrl);
+    }
+  }, [searchParams]);
 
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
@@ -161,6 +171,7 @@ export default function LoanManagementPage() {
               <option value="ALL">-- Tất cả trạng thái --</option>
               <option value="CHO_DUYET">Chờ Duyệt Bàn Giao</option>
               <option value="DANG_MUON">Đang Mượn</option>
+              <option value="QUA_HAN">Quá Hạn Mượn</option>
               <option value="DA_TRA">Đã Nhận Trả Kho</option>
               <option value="TU_CHOI">Từ Chối</option>
             </select>
@@ -283,7 +294,7 @@ export default function LoanManagementPage() {
                           </>
                         )}
 
-                        {pm.trangThai === "DANG_MUON" && isArchivistOrAdmin && (
+                        {(pm.trangThai === "DANG_MUON" || pm.trangThai === "QUA_HAN") && isArchivistOrAdmin && (
                           <button
                             onClick={() => returnMutation.mutate(pm.id)}
                             disabled={returnMutation.isPending}

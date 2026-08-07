@@ -26,6 +26,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { NotificationPopover } from "@/components/NotificationPopover";
 
 const SIDEBAR_COLLAPSED_KEY = "eduarchive_sidebar_collapsed";
 
@@ -150,7 +151,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       icon: BookOpenText,
       subItems: [
         { name: "Tra cứu & Đăng ký mượn/trả", href: "/dashboard/loans", icon: BookOpen },
-        { name: "Cảnh báo quá hạn", href: "/dashboard/loans?status=QUA_HAN", icon: ShieldWarning },
+        { name: "Cảnh báo quá hạn", href: "/dashboard/loans/overdue", icon: ShieldWarning },
       ],
     },
     ...(isArchivistOrAdmin
@@ -293,6 +294,11 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       <nav className={`flex-1 px-3 overflow-y-auto sidebar-scroll ${collapsed && !isMobile ? "px-2" : ""}`}>
         {renderSidebarContent(onLinkClick)}
       </nav>
+
+      {/* Notification Bell in Sidebar */}
+      <div className={`px-3 pt-2 pb-1 border-t border-white/[0.06] ${collapsed && !isMobile ? "px-2" : ""}`}>
+        <NotificationPopover collapsed={collapsed && !isMobile} />
+      </div>
 
       {/* User footer */}
       <div className={`p-3 mt-auto border-t border-white/[0.06] ${collapsed && !isMobile ? "flex justify-center" : ""}`}>
