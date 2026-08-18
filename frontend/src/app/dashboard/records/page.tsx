@@ -69,7 +69,14 @@ function RecordsContent() {
   const [locations, setLocations] = useState<ViTriLuuTru[]>([]);
 
   // Create Modal State
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(shouldOpenCreateModal);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (shouldOpenCreateModal && isArchivistOrAdmin) {
+      setIsCreateModalOpen(true);
+    }
+  }, [shouldOpenCreateModal, isArchivistOrAdmin]);
+
   const [retentionMode, setRetentionMode] = useState<"CATEGORY" | "MONTHS" | "DAYS" | "EXACT_DATE">("CATEGORY");
   const [useDefaultRetention, setUseDefaultRetention] = useState(true);
   const [createForm, setCreateForm] = useState({
@@ -373,16 +380,20 @@ function RecordsContent() {
             Quản Lý Hồ Sơ & Số Hóa
           </h1>
           <p className="text-secondary text-sm mt-1">
-            Khai báo hồ sơ mới, gán vị trí kho vật lý, theo dõi trạng thái số hóa và tải file PDF MinIO
+            {isArchivistOrAdmin
+              ? "Khai báo hồ sơ mới, gán vị trí kho vật lý, theo dõi trạng thái số hóa và tải file PDF MinIO"
+              : "Tra cứu danh mục hồ sơ lưu trữ, đăng ký mượn và xem tài liệu số hóa"}
           </p>
         </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:bg-primary-container transition-all shadow-md shadow-primary/20 whitespace-nowrap"
-        >
-          <Plus className="w-4 h-4" />
-          Khai Báo Hồ Sơ Mới
-        </button>
+        {isArchivistOrAdmin && (
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:bg-primary-container transition-all shadow-md shadow-primary/20 whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" />
+            Khai Báo Hồ Sơ Mới
+          </button>
+        )}
       </div>
 
       {/* Filter & Search */}
@@ -632,7 +643,7 @@ function RecordsContent() {
       </div>
 
       {/* Modal Create Record */}
-      {isCreateModalOpen && (
+      {isArchivistOrAdmin && isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-pure-surface rounded-2xl border border-whisper-border max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
