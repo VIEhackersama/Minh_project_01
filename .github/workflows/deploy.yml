@@ -2,9 +2,9 @@ name: CI/CD - Deploy to VPS
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, dev ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, dev ]
 
 jobs:
   # ─────────────────────────────────────────────
@@ -71,9 +71,10 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
+    environment: VPS deployment
     needs: [ build-backend, build-frontend ]
     # Chỉ deploy khi push lên main/master, không deploy khi là PR
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev')
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
