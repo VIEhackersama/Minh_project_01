@@ -123,7 +123,7 @@ export default function LoanManagementPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-black tracking-tight text-on-surface">Mượn / Trả Hồ Sơ & Đặt Giữ</h1>
+          <h1 className="text-2xl font-black tracking-tight text-on-surface">Lịch Sử Mượn Trả</h1>
           <p className="text-sm text-secondary">Quản lý quy trình đăng ký giữ chỗ, phê duyệt và bàn giao hồ sơ vật lý trong kho.</p>
         </div>
 

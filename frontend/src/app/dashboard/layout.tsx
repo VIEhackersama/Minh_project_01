@@ -150,7 +150,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       name: "Khai thác mượn trả",
       icon: BookOpenText,
       subItems: [
-        { name: "Tra cứu & Đăng ký mượn/trả", href: "/dashboard/loans", icon: BookOpen },
+        { name: "Lịch sử mượn trả", href: "/dashboard/loans", icon: BookOpen },
         { name: "Cảnh báo quá hạn", href: "/dashboard/loans/overdue", icon: ShieldWarning },
       ],
     },
