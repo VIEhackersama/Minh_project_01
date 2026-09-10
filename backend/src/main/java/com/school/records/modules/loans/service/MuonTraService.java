@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MuonTraService {
@@ -171,5 +172,39 @@ public class MuonTraService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         return phieuMuonRepository.findAll(spec, pageable);
+    }
+
+    public Optional<PhieuMuon> getActiveLoanByMaHoSo(String maHoSo) {
+        if (maHoSo == null || maHoSo.trim().isEmpty()) {
+            return Optional.empty();
+        }
+        // Auto check overdue loans first
+        try {
+            checkAndMarkOverdueLoans();
+        } catch (Exception ignored) {}
+
+        List<TrangThaiPhieuMuon> activeStatuses = List.of(
+                TrangThaiPhieuMuon.CHO_DUYET,
+                TrangThaiPhieuMuon.DA_DUYET,
+                TrangThaiPhieuMuon.DANG_MUON,
+                TrangThaiPhieuMuon.QUA_HAN
+        );
+        return phieuMuonRepository.findFirstByHoSoMaHoSoAndTrangThaiInOrderByIdDesc(maHoSo.trim(), activeStatuses);
+    }
+
+    @Transactional
+    public PhieuMuon xacNhanTraHoSoByMaHoSo(String maHoSo, String usernameDuyet) {
+        if (maHoSo == null || maHoSo.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã hồ sơ không được để trống");
+        }
+        List<TrangThaiPhieuMuon> returnableStatuses = List.of(
+                TrangThaiPhieuMuon.DANG_MUON,
+                TrangThaiPhieuMuon.DA_DUYET,
+                TrangThaiPhieuMuon.QUA_HAN
+        );
+        PhieuMuon phieuMuon = phieuMuonRepository.findFirstByHoSoMaHoSoAndTrangThaiInOrderByIdDesc(maHoSo.trim(), returnableStatuses)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu mượn đang diễn ra hoặc quá hạn cho mã hồ sơ: " + maHoSo));
+
+        return xacNhanTraHoSo(phieuMuon.getId(), usernameDuyet);
     }
 }

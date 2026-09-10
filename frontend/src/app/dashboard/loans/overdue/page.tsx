@@ -22,8 +22,10 @@ import {
   RefreshCw, 
   Loader2, 
   Calendar,
-  AlertCircle
+  AlertCircle,
+  QrCode
 } from "lucide-react";
+import { QrScannerModal } from "@/components/QrScannerModal";
 
 export default function OverdueLoansPage() {
   const { user, hasPermission } = useAuth();
@@ -31,6 +33,7 @@ export default function OverdueLoansPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   // Fetch only QUA_HAN loans
   const { data: loansData, isLoading, refetch, isRefetching } = useQuery<PhieuMuonPageResponse>({
@@ -101,14 +104,25 @@ export default function OverdueLoansPage() {
         </div>
 
         {isArchivistOrAdmin && (
-          <button
-            onClick={() => scanMutation.mutate()}
-            disabled={scanMutation.isPending}
-            className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 rounded-full text-xs font-semibold shadow-md transition-all disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${scanMutation.isPending ? "animate-spin" : ""}`} />
-            Quét & Cập Nhật Quá Hạn Ngay
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={() => setIsQrModalOpen(true)}
+              className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 rounded-full text-xs font-semibold shadow-md transition-all"
+            >
+              <QrCode className="w-4 h-4" />
+              Quét QR Nhận Trả Nhanh
+            </button>
+
+            <button
+              onClick={() => scanMutation.mutate()}
+              disabled={scanMutation.isPending}
+              title="Tự động rà soát cơ sở dữ liệu và chuyển các phiếu mượn trễ hạn sang trạng thái Quá hạn"
+              className="flex items-center gap-2 border border-whisper-border bg-pure-surface hover:bg-slate-50 text-secondary px-4 py-3 rounded-full text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${scanMutation.isPending ? "animate-spin" : ""}`} />
+              Rà Soát Quá Hạn Hệ Thống
+            </button>
+          </div>
         )}
       </div>
 
@@ -311,6 +325,17 @@ export default function OverdueLoansPage() {
           </div>
         )}
       </div>
+
+      {/* QR SCANNER MODAL */}
+      <QrScannerModal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        title="Quét QR Nhận Trả Hồ Sơ Quá Hạn"
+        onSuccessLoan={() => {
+          queryClient.invalidateQueries({ queryKey: ["phieu-muon-overdue"] });
+          queryClient.invalidateQueries({ queryKey: ["phieu-muon"] });
+        }}
+      />
     </div>
   );
 }

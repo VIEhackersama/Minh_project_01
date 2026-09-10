@@ -343,7 +343,11 @@ export default function LoanManagementPage() {
       <QrScannerModal
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}
-        onSuccessLoan={() => queryClient.invalidateQueries({ queryKey: ["phieu-muon"] })}
+        title="Quét QR / Xử Lý Mượn Trả Nhanh"
+        onSuccessLoan={() => {
+          queryClient.invalidateQueries({ queryKey: ["phieu-muon"] });
+          queryClient.invalidateQueries({ queryKey: ["phieu-muon-overdue"] });
+        }}
       />
     </div>
   );
