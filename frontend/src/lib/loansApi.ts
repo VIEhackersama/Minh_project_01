@@ -52,6 +52,18 @@ export async function checkOverdueLoans() {
   return api.post<{ message: string; updatedCount: number }>("/phieu-muon/check-overdue");
 }
 
+export async function getCurrentLoanByMaHoSo(maHoSo: string) {
+  try {
+    return await api.get<PhieuMuon>(`/phieu-muon/current-loan?maHoSo=${encodeURIComponent(maHoSo)}`);
+  } catch (err: any) {
+    return null;
+  }
+}
+
+export async function xacNhanTraNhanhByMaHoSo(maHoSo: string) {
+  return api.post<PhieuMuon>("/phieu-muon/tra-nhanh", { maHoSo });
+}
+
 export async function decodeQrImage(file: File) {
   const formData = new FormData();
   formData.append("file", file);

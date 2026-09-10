@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PhieuMuonRepository extends JpaRepository<PhieuMuon, Long>, JpaSpecificationExecutor<PhieuMuon> {
@@ -16,5 +17,8 @@ public interface PhieuMuonRepository extends JpaRepository<PhieuMuon, Long>, Jpa
     boolean existsByHoSoIdAndTrangThaiIn(Long hoSoId, List<TrangThaiPhieuMuon> trangThais);
     List<PhieuMuon> findByTrangThaiInAndNgayHenTraBefore(List<TrangThaiPhieuMuon> trangThais, LocalDate date);
     long countByTrangThai(TrangThaiPhieuMuon trangThai);
+
+    Optional<PhieuMuon> findFirstByHoSoMaHoSoAndTrangThaiInOrderByIdDesc(String maHoSo, List<TrangThaiPhieuMuon> trangThais);
+    Optional<PhieuMuon> findFirstByHoSoIdAndTrangThaiInOrderByIdDesc(Long hoSoId, List<TrangThaiPhieuMuon> trangThais);
 }
 

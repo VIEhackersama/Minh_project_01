@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -91,7 +92,15 @@ public class PhieuMuonController {
         ));
     }
 
+    @GetMapping("/current-loan")
+    public ResponseEntity<?> getCurrentLoan(@RequestParam("maHoSo") String maHoSo) {
+        return muonTraService.getActiveLoanByMaHoSo(maHoSo)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     @PostMapping("/{id}/duyet")
+    @PreAuthorize("hasAuthority('LOAN_MANAGE') or hasAnyRole('ADMIN', 'RECORDS_OFFICER')")
     public ResponseEntity<?> pheDuyet(
             @PathVariable("id") Long id,
             @RequestBody DuyetRequest request,
@@ -121,6 +130,7 @@ public class PhieuMuonController {
     }
 
     @PostMapping("/{id}/tra")
+    @PreAuthorize("hasAuthority('LOAN_MANAGE') or hasAnyRole('ADMIN', 'RECORDS_OFFICER')")
     public ResponseEntity<?> xacNhanTra(
             @PathVariable("id") Long id,
             HttpServletRequest servletRequest
@@ -143,7 +153,37 @@ public class PhieuMuonController {
         }
     }
 
+    @PostMapping("/tra-nhanh")
+    @PreAuthorize("hasAuthority('LOAN_MANAGE') or hasAnyRole('ADMIN', 'RECORDS_OFFICER')")
+    public ResponseEntity<?> xacNhanTraNhanh(
+            @RequestBody Map<String, String> request,
+            HttpServletRequest servletRequest
+    ) {
+        try {
+            String maHoSo = request.get("maHoSo");
+            if (maHoSo == null || maHoSo.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Mã hồ sơ không được để trống"));
+            }
+            String currentUsername = getCurrentUsername();
+            PhieuMuon phieuMuon = muonTraService.xacNhanTraHoSoByMaHoSo(maHoSo.trim(), currentUsername);
+
+            auditService.log(
+                    currentUsername,
+                    "XAC_NHAN_TRA_HO_SO_QR",
+                    "Quét QR/Trả nhanh hồ sơ mã: " + maHoSo + " (Phiếu ID: " + phieuMuon.getId() + ")",
+                    servletRequest
+            );
+
+            return ResponseEntity.ok(phieuMuon);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        }
+    }
+
     @PostMapping("/check-overdue")
+    @PreAuthorize("hasAuthority('LOAN_MANAGE') or hasAnyRole('ADMIN', 'RECORDS_OFFICER')")
     public ResponseEntity<?> checkOverdue(HttpServletRequest servletRequest) {
         try {
             String currentUsername = getCurrentUsername();
